@@ -4,7 +4,7 @@ Give this file to an AI assistant (or a new developer) at the start of any
 work on Zebron. It explains what Zebron is, how it is built, where things
 live, the rules every change follows, and how we work together.
 
-- **Last updated:** 23 November 2026 (guide edition 139)
+- **Last updated:** 23 November 2026 (guide edition 140)
 - **Also in the Knowledge Center** as "Zebron platform overview for the team" (support and developers), and introduced on the Internal Blog in "How Zebron works: one page for the whole team" (`scripts/seed-blog-zebron-context.mjs`).
 - **Keep it current:** when a change makes anything here wrong (a new
   application, folder, collection, function, rule or way of working), update
@@ -176,7 +176,8 @@ security.
   `platformMailboxes`
 - Platform: `systemSettings` (public read, platform-admin write),
   `featureConfigurations`, `siteReviews` (home page reviews), `categories`, `locations`, `resources`,
-  `resourceTypes`, `jobs`, `bootcamps`, `taxPayConfigurations`,
+  `resourceTypes`, `resourceReports` (Report a problem; anyone creates, platform
+  admins read and close), `jobs`, `bootcamps`, `taxPayConfigurations`,
   `userClaims/{uid}`, `aiUsage`, `aiUsageDaily`, `platformBackups` (Admin → Backups;
   files in Storage under `platform-backups/`)
 

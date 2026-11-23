@@ -4254,6 +4254,47 @@ service cloud.firestore {
     }
 
     // ============================================================
+    // RESOURCE PROBLEM REPORTS ("Report a problem" on a resource)
+    // ============================================================
+
+    // Anyone, signed in or not, can report a problem with an existing
+    // resource. Reports start open and only platform administrators
+    // read them or mark them resolved or dismissed.
+    match /resourceReports/{reportId} {
+      allow get, list: if isPlatformAdmin();
+
+      allow create: if request.resource.data.keys().hasOnly([
+          "resourceId", "resourceName", "resourceSlug", "reason",
+          "details", "contactEmail", "reportedBy", "status", "createdAt"
+        ])
+        && request.resource.data.status == "open"
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.resourceId is string
+        && request.resource.data.resourceId.size() > 0
+        && request.resource.data.resourceId.size() <= 100
+        && exists(/databases/$(database)/documents/resources/$(request.resource.data.resourceId))
+        && request.resource.data.resourceName is string
+        && request.resource.data.resourceName.size() <= 200
+        && request.resource.data.resourceSlug is string
+        && request.resource.data.resourceSlug.size() <= 200
+        && request.resource.data.reason in ["closed", "phone", "address", "hours", "link", "eligibility", "other"]
+        && request.resource.data.details is string
+        && request.resource.data.details.size() <= 1000
+        && request.resource.data.contactEmail is string
+        && request.resource.data.contactEmail.size() <= 200
+        && (
+          (request.auth == null && request.resource.data.reportedBy == null)
+          || (request.auth != null && request.resource.data.reportedBy == request.auth.uid)
+        );
+
+      allow update: if isPlatformAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["status", "resolvedBy", "resolvedAt"])
+        && request.resource.data.status in ["open", "resolved", "dismissed"];
+
+      allow delete: if isPlatformAdmin();
+    }
+
+    // ============================================================
     // CATEGORIES AND LOCATIONS (public lookup lists)
     // ============================================================
 

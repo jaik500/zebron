@@ -8,6 +8,7 @@ import { DeleteConfirmationComponent } from '../../../../shared/components/delet
 
 import { Category } from '../../../../core/models/category.model';
 import { CategoryStore } from '../../../categories/stores/category.store';
+import { REVIEW_DAYS_MAX, REVIEW_DAYS_MIN, defaultReviewDays, reviewIntervalDays } from '../../../resources/resource-review';
 import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -228,6 +229,26 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                       </mat-form-field>
 
                       <p class="mt-1.5 text-xs text-gray-500">Lower numbers appear first.</p>
+                    </div>
+
+                    <!-- Review interval -->
+                    <div class="sm:col-span-2">
+                      <mat-form-field appearance="outline" class="zb-field">
+                        <mat-label>Check resources every (days)</mat-label>
+                        <input matInput
+                        id="reviewIntervalDays"
+                        name="reviewIntervalDays"
+                        type="number" inputmode="numeric"
+                        [min]="reviewMin" [max]="reviewMax"
+                        [(ngModel)]="form.reviewIntervalDays"
+                        [placeholder]="'Default: ' + defaultReviewFor()"
+                      />
+                      </mat-form-field>
+                      <p class="mt-1.5 text-xs text-gray-500">
+                        How often its resources should be verified again. Leave empty for the default
+                        ({{ defaultReviewFor() }} days for this kind of category; crisis and hotline categories 30).
+                        Resources past this are marked "Due for review".
+                      </p>
                     </div>
                   </div>
                 </section>
@@ -478,7 +499,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                justify-between gap-3"
                     >
                       <span class="text-xs text-gray-400">
-                        Sort order: {{ category.sortOrder }}
+                        Sort order: {{ category.sortOrder }} · checked every {{ reviewDaysOf(category) }} days
                       </span>
 
                       <div class="flex gap-1.5">
@@ -560,6 +581,18 @@ export class CategoryAdminComponent implements OnInit {
 
   protected form = this.createEmptyForm();
 
+  protected readonly reviewMin = REVIEW_DAYS_MIN;
+  protected readonly reviewMax = REVIEW_DAYS_MAX;
+
+  /** The default review interval for the category in the form. */
+  protected defaultReviewFor(): number {
+    return defaultReviewDays({ name: this.form.name, slug: this.form.slug });
+  }
+
+  protected reviewDaysOf(category: Category): number {
+    return reviewIntervalDays(category);
+  }
+
   // =========================================================
   // Views (list / form) and display preference
   // =========================================================
@@ -635,6 +668,13 @@ private async loadCategories(): Promise<void> {
 
     const sortOrder = Number(this.form.sortOrder);
 
+    const reviewText = String(this.form.reviewIntervalDays ?? '').trim();
+    const reviewDays = reviewText ? Math.round(Number(reviewText)) : null;
+    if (reviewDays !== null && (!Number.isFinite(reviewDays) || reviewDays < REVIEW_DAYS_MIN || reviewDays > REVIEW_DAYS_MAX)) {
+      this.toast.error(`Check resources every: enter ${REVIEW_DAYS_MIN} to ${REVIEW_DAYS_MAX} days, or leave it empty.`);
+      return;
+    }
+
     // ===============================================================
     // Validate required fields
     // ===============================================================
@@ -682,6 +722,9 @@ private async loadCategories(): Promise<void> {
         active: this.form.active,
 
         sortOrder,
+
+        // null = use the default for this kind of category.
+        reviewIntervalDays: reviewDays,
       };
 
       // =============================================================
@@ -753,6 +796,7 @@ private async loadCategories(): Promise<void> {
       icon: category.icon ?? '',
       active: category.active,
       sortOrder: category.sortOrder,
+      reviewIntervalDays: (category.reviewIntervalDays ?? null) as number | null,
     };
 
     window.scrollTo({
@@ -869,6 +913,7 @@ private async loadCategories(): Promise<void> {
       icon: '',
       active: true,
       sortOrder: this.getNextSortOrder(),
+      reviewIntervalDays: null as number | null,
     };
   }
 

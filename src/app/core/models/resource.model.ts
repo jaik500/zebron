@@ -54,4 +54,21 @@ export interface Resource {
   updatedAt: Timestamp;
 
   lastVerifiedAt?: Timestamp;
+
+  // ---- How to get help (all optional; shown on the resource page) ----
+
+  /** Who can use it: "Montgomery County residents with low income". */
+  eligibility?: string;
+  /** What to bring or have ready, one item per line. */
+  documentsNeeded?: string;
+  /** Steps to apply or get started. */
+  howToApply?: string;
+  /** Direct link to the application form (shown as "Apply"). */
+  applyUrl?: string;
+  /** Languages spoken or offered: ["English", "Spanish"]. */
+  languages?: string[];
+  /** Who it serves geographically: "Prince George's County", "Maryland", "Anywhere (online)". */
+  serviceArea?: string;
+  /** Where Zebron confirmed these details (official page). Shown with the verification date. */
+  sourceUrl?: string;
 }

@@ -68,6 +68,8 @@ interface StaleResource {
   name: string;
   lastVerifiedAt: Timestamp | null;
   days: number | null;
+  /** The category's review interval (checks run since November 2026). */
+  intervalDays?: number;
 }
 
 interface DuplicateGroup {
@@ -82,7 +84,7 @@ interface ContentChecks {
   durationMs?: number;
   resourcesChecked?: number;
   linksChecked?: number;
-  staleDays?: number;
+  staleDays?: number | null;
   brokenLinks?: LinkProblem[];
   blockedLinks?: LinkProblem[];
   staleResources?: StaleResource[];
@@ -222,7 +224,7 @@ const TASK_LABELS: Record<string, string> = {
               }
               @case ('stale') {
                 <p class="border-b border-gray-100 bg-gray-50 px-5 py-2 text-xs text-gray-600">
-                  Published listings never verified, or verified more than {{ checks()?.staleDays ?? 365 }} days ago. Call or check each one, then tick Verified in Resources.
+                  Published listings never verified, or verified longer ago than their category allows (Admin → Categories → "Check resources every"). Call or check each one, then tick Verified in Resources.
                 </p>
                 @if (checks()?.staleResources?.length) {
                   <ul class="divide-y divide-gray-100">
@@ -230,13 +232,13 @@ const TASK_LABELS: Record<string, string> = {
                       <li class="flex items-center gap-3 px-5 py-2.5 text-sm">
                         <a [routerLink]="['/resources', item.resourceSlug]" target="_blank" class="min-w-0 flex-1 truncate font-medium text-[#032D42] hover:text-[#007979]">{{ item.name }}</a>
                         <span class="shrink-0 text-xs {{ item.days === null ? 'text-red-600' : 'text-amber-700' }}">
-                          {{ item.days === null ? 'Never verified' : 'Verified ' + item.days + ' days ago' }}
+                          {{ item.days === null ? 'Never verified' : 'Verified ' + item.days + ' days ago' + (item.intervalDays ? ' (every ' + item.intervalDays + ')' : '') }}
                         </span>
                       </li>
                     }
                   </ul>
                 } @else {
-                  <p class="px-5 py-8 text-center text-sm text-gray-500">Every listing was verified within the last year.</p>
+                  <p class="px-5 py-8 text-center text-sm text-gray-500">Nothing is due for review.</p>
                 }
               }
               @case ('duplicates') {
@@ -418,7 +420,7 @@ export class AiContentAdminComponent implements OnInit {
     return [
       { key: 'broken' as const, label: 'Broken links', count: value?.brokenLinks?.length ?? 0, tone: 'bg-red-100 text-red-700' },
       { key: 'blocked' as const, label: 'Could not check', count: value?.blockedLinks?.length ?? 0, tone: 'bg-gray-200 text-gray-700' },
-      { key: 'stale' as const, label: 'Out of date', count: value?.staleResources?.length ?? 0, tone: 'bg-amber-100 text-amber-800' },
+      { key: 'stale' as const, label: 'Due for review', count: value?.staleResources?.length ?? 0, tone: 'bg-amber-100 text-amber-800' },
       { key: 'duplicates' as const, label: 'Possible duplicates', count: value?.duplicateGroups?.length ?? 0, tone: 'bg-amber-100 text-amber-800' },
     ];
   });
@@ -487,7 +489,7 @@ export class AiContentAdminComponent implements OnInit {
         timeout: 540_000,
       });
       const result = await run();
-      this.toast.success(`Done: ${result.data.broken} broken links, ${result.data.stale} out of date, ${result.data.duplicates} possible duplicates.`);
+      this.toast.success(`Done: ${result.data.broken} broken links, ${result.data.stale} due for review, ${result.data.duplicates} possible duplicates.`);
       const snapshot = await getDoc(doc(firestore, 'contentChecks', 'latest'));
       this.checks.set((snapshot.data() as ContentChecks) ?? null);
     } catch (error) {

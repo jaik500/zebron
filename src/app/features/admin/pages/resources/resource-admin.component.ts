@@ -1,4 +1,4 @@
-import { Component, computed, inject, OnInit, signal, viewChild } from '@angular/core';
+import { Component, computed, DestroyRef, inject, OnInit, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { serverTimestamp } from 'firebase/firestore';
 import { ADMIN_LAYOUT_OPTIONS, AdminBackLinkComponent, AdminLayoutSwitchComponent, adminViewState } from '../../shared/admin-view';
@@ -33,6 +33,9 @@ import { AvailabilityDay } from '../../../../core/models/availability.model';
 import { PageTitleService } from '../../../../core/services/page-title.service';
 import { AiService } from '../../../../core/services/ai.service';
 import { AiResourceFinderComponent } from './ai-resource-finder.component';
+import { ReviewState, reviewState } from '../../../resources/resource-review';
+import { ResourceReportService } from '../../../resources/resource-report.service';
+import { ResourceReportsPanelComponent } from './resource-reports-panel.component';
 type DayKey = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
 
 interface DayHours {
@@ -68,7 +71,7 @@ function hoursFrom(availability: Resource['availability']): Record<DayKey, DayHo
 @Component({
   selector: 'app-resource-admin',
   standalone: true,
-  imports: [AdminBackLinkComponent, AdminLayoutSwitchComponent, NgClass, FormsModule, RouterLink, MatIconModule, MatDividerModule, MatMenuModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule, BootcampProgramsEditorComponent, AiResourceFinderComponent],
+  imports: [AdminBackLinkComponent, AdminLayoutSwitchComponent, NgClass, FormsModule, RouterLink, MatIconModule, MatDividerModule, MatMenuModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule, BootcampProgramsEditorComponent, AiResourceFinderComponent, ResourceReportsPanelComponent],
   template: `
     <div class="min-h-screen bg-gray-50">
       <!-- Header -->
@@ -846,6 +849,63 @@ function hoursFrom(availability: Resource['availability']): Record<DayKey, DayHo
                     }
 
                     <!-- =================================================
+                 How to get help
+                 ================================================= -->
+                    <section class="border-t border-gray-200 pt-7">
+                      <div class="mb-4">
+                        <h3 class="text-base font-semibold text-gray-900">How to get help</h3>
+                        <p class="mt-1 text-sm text-gray-500">
+                          What people need to know before they go or apply. All optional; anything filled in shows on the resource page.
+                        </p>
+                      </div>
+
+                      <div class="grid gap-x-5 sm:grid-cols-2">
+                        <mat-form-field appearance="outline" class="zb-field sm:col-span-2">
+                          <mat-label>Who can use it</mat-label>
+                          <textarea matInput id="eligibility" name="eligibility" rows="2" maxlength="1000"
+                            [(ngModel)]="form.eligibility"
+                            placeholder="Montgomery County residents with low income; no ID needed"></textarea>
+                          <mat-hint>Eligibility: age, income, residence, status, referral needed…</mat-hint>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" class="zb-field">
+                          <mat-label>What to bring</mat-label>
+                          <textarea matInput id="documentsNeeded" name="documentsNeeded" rows="3" maxlength="1000"
+                            [(ngModel)]="form.documentsNeeded"
+                            placeholder="Photo ID&#10;Proof of address&#10;Recent pay stubs"></textarea>
+                          <mat-hint>One item per line</mat-hint>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" class="zb-field">
+                          <mat-label>How to apply</mat-label>
+                          <textarea matInput id="howToApply" name="howToApply" rows="3" maxlength="1500"
+                            [(ngModel)]="form.howToApply"
+                            placeholder="Call to book an intake appointment, or walk in Tuesday mornings."></textarea>
+                          <mat-hint>Steps, walk-in or appointment, wait times</mat-hint>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" class="zb-field">
+                          <mat-label>Application link</mat-label>
+                          <input matInput id="applyUrl" name="applyUrl" type="url" [(ngModel)]="form.applyUrl" placeholder="https://example.org/apply" />
+                          <mat-hint>Shown as an "Apply" button</mat-hint>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" class="zb-field">
+                          <mat-label>Languages</mat-label>
+                          <input matInput id="languages" name="languages" type="text" [(ngModel)]="form.languages" placeholder="English, Spanish, French" />
+                          <mat-hint>Separate with commas</mat-hint>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" class="zb-field sm:col-span-2">
+                          <mat-label>Area served</mat-label>
+                          <input matInput id="serviceArea" name="serviceArea" type="text" maxlength="200" [(ngModel)]="form.serviceArea"
+                            placeholder="Prince George's County · Maryland · Anywhere (online)" />
+                          <mat-hint>Where people must live or be to use it</mat-hint>
+                        </mat-form-field>
+                      </div>
+                    </section>
+
+                    <!-- =================================================
                  Bootcamp programs (Bootcamps category only)
                  ================================================= -->
                     @if (profile().showPrograms) {
@@ -892,7 +952,15 @@ function hoursFrom(availability: Resource['availability']): Record<DayKey, DayHo
                         </p>
                       </div>
 
+                      <app-resource-reports-panel [resourceId]="editingId()" />
+
                       <div class="space-y-5">
+                        <mat-form-field appearance="outline" class="zb-field">
+                          <mat-label>Source</mat-label>
+                          <input matInput id="sourceUrl" name="sourceUrl" type="url" [(ngModel)]="form.sourceUrl" placeholder="https://provider.org/services/food-pantry" />
+                          <mat-hint>The official page where you confirmed these details. Shown with the verification date.</mat-hint>
+                        </mat-form-field>
+
                         <div>
 
                           <mat-form-field appearance="outline" class="zb-field">
@@ -930,6 +998,7 @@ function hoursFrom(availability: Resource['availability']): Record<DayKey, DayHo
                                 <span class="text-xs font-medium text-gray-700">I checked the details today</span>
                               </mat-checkbox>
                             }
+                            <p class="ml-8 mt-1 text-xs {{ formReview().due ? 'font-medium text-amber-700' : 'text-gray-500' }}">{{ formReviewText() }}</p>
                           </div>
 
                           <mat-checkbox class="zb-checkbox--top" name="featured" [(ngModel)]="form.featured"><span>
@@ -1102,9 +1171,30 @@ function hoursFrom(availability: Resource['availability']): Record<DayKey, DayHo
                   </div>
                 }
 
+                <!-- Needs attention: due for review / reported -->
+                @if (resources().length > 0) {
+                  <div class="flex flex-wrap gap-2 border-b border-gray-100 px-4 py-2.5" role="group" aria-label="Show">
+                    @for (option of [
+                      { key: 'all', label: 'All', count: resources().length },
+                      { key: 'due', label: 'Due for review', count: dueCount() },
+                      { key: 'reported', label: 'Reported problems', count: reportedCount() }
+                    ]; track option.key) {
+                      <button type="button" (click)="attentionFilter.set($any(option.key))" [attr.aria-pressed]="attentionFilter() === option.key"
+                        [class]="attentionFilter() === option.key
+                          ? 'inline-flex items-center gap-1.5 rounded-full bg-[#032D42] px-3 py-1 text-xs font-semibold text-white'
+                          : 'inline-flex items-center gap-1.5 rounded-full border border-gray-300 bg-white px-3 py-1 text-xs font-medium text-gray-700 hover:border-[#007979]'">
+                        {{ option.label }}
+                        <span [class]="option.key === 'reported' && option.count ? 'rounded-full bg-red-100 px-1.5 text-red-700' : option.key === 'due' && option.count ? 'rounded-full bg-amber-100 px-1.5 text-amber-800' : 'opacity-70'">{{ option.count }}</span>
+                      </button>
+                    }
+                  </div>
+                }
+
                 <!-- Resource list -->
                 @if (resources().length > 0 && filteredResources().length === 0) {
-                  <p class="p-6 text-center text-sm text-gray-500">No resources match your search.</p>
+                  <p class="p-6 text-center text-sm text-gray-500">
+                    {{ attentionFilter() === 'due' ? 'Nothing is due for review.' : attentionFilter() === 'reported' ? 'No open problem reports.' : 'No resources match your search.' }}
+                  </p>
                 }
 
                 @if (filteredResources().length > 0) {
@@ -1245,6 +1335,18 @@ function hoursFrom(availability: Resource['availability']): Record<DayKey, DayHo
                                   Not verified
                                 </span>
                               }
+                              @let review = reviewOf(resource);
+                              @if (resource.status === 'published' && review.due) {
+                                <span class="ml-1 inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800"
+                                  [title]="review.never ? 'Never verified' : 'Next check was due ' + review.overdueDays + ' days ago'">
+                                  Due for review
+                                </span>
+                              }
+                              @if (reportCounts().get(resource.id); as reportCount) {
+                                <span class="ml-1 inline-flex rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-700">
+                                  {{ reportCount }} {{ reportCount === 1 ? 'report' : 'reports' }}
+                                </span>
+                              }
                             </div>
 
                             <!-- Actions -->
@@ -1373,12 +1475,21 @@ export class ResourceAdminComponent implements OnInit {
    */
   protected readonly filteredResources = computed(() => {
     const search = this.searchTerm().trim().toLowerCase();
+    const attention = this.attentionFilter();
+    const reports = this.reportCounts();
+    const pool = attention === 'all'
+      ? this.resources()
+      : this.resources().filter((resource) =>
+          attention === 'reported'
+            ? reports.has(resource.id)
+            : resource.status === 'published' && this.reviewOf(resource).due,
+        );
 
     if (!search) {
-      return this.resources();
+      return pool;
     }
 
-    return this.resources().filter(
+    return pool.filter(
       (resource) =>
         resource.name?.toLowerCase().includes(search) ||
         resource.slug?.toLowerCase().includes(search) ||
@@ -1469,6 +1580,46 @@ export class ResourceAdminComponent implements OnInit {
     return date ? date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
   });
 
+  // =========================================================
+  // Review schedule and problem reports
+  // =========================================================
+
+  private readonly reportService = inject(ResourceReportService);
+  private readonly destroyRef = inject(DestroyRef);
+
+  /** Open problem reports per resource ID. */
+  protected readonly reportCounts = this.reportService.openCountsByResource;
+
+  /** List filter: everything, due for review, or with open reports. */
+  protected readonly attentionFilter = signal<'all' | 'due' | 'reported'>('all');
+
+  protected readonly dueCount = computed(
+    () => this.resources().filter((resource) => resource.status === 'published' && this.reviewOf(resource).due).length,
+  );
+
+  protected readonly reportedCount = computed(() => this.reportCounts().size);
+
+  protected reviewOf(resource: Resource): ReviewState {
+    return reviewState(resource, this.categories().find((category) => category.id === resource.categoryId));
+  }
+
+  /** Review state of the resource in the form (verifying today counts). */
+  protected formReview(): ReviewState {
+    const category = this.categories().find((item) => item.id === this.form.categoryId);
+    const last = this.form.verified && this.form.checkedToday ? new Date() : this.lastVerifiedAt();
+    return reviewState({ verified: this.form.verified, lastVerifiedAt: last ? { toDate: () => last } : null }, category);
+  }
+
+  protected formReviewText(): string {
+    const review = this.formReview();
+    const every = `This category is checked every ${review.intervalDays} days.`;
+    if (review.never) {
+      return `${every} Not verified yet.`;
+    }
+    const next = review.nextReview!.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return review.due ? `${every} The next check was due ${next}.` : `${every} Next check by ${next}.`;
+  }
+
   // Improve with AI (shared AI engine)
   private readonly ai = inject(AiService);
   protected readonly improving = signal(false);
@@ -1513,6 +1664,8 @@ export class ResourceAdminComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadData();
+    // Keep open problem reports live while this page is open.
+    this.reportService.watch(this.destroyRef);
   }
 
   /**
@@ -1642,6 +1795,23 @@ export class ResourceAdminComponent implements OnInit {
 
     const locationId = this.form.locationId?.trim() || '';
 
+    const applyUrl = this.form.applyUrl?.trim() || '';
+    const sourceUrl = this.form.sourceUrl?.trim() || '';
+    for (const [label, url] of [['Website', website], ['Application link', applyUrl], ['Source', sourceUrl]] as const) {
+      if (url && !/^https?:\/\/\S+\.\S+/i.test(url)) {
+        this.toast.error(`${label} must be a full web address starting with https://`);
+        return;
+      }
+    }
+
+    const languages = [...new Set(
+      (this.form.languages ?? '')
+        .split(',')
+        .map((language) => language.trim())
+        .filter(Boolean)
+        .map((language) => language.charAt(0).toUpperCase() + language.slice(1)),
+    )].slice(0, 20);
+
     const tags =
       this.form.tags
         ?.split(',')
@@ -1700,8 +1870,9 @@ export class ResourceAdminComponent implements OnInit {
     // =========================================================
 
     // Form-only fields are not stored as they are.
-    const { hours, eventStart, eventEnd, checkedToday, ...formFields } = this.form;
+    const { hours, eventStart, eventEnd, checkedToday, languages: languagesText, ...formFields } = this.form;
     void hours;
+    void languagesText;
 
     const resource = {
       ...formFields,
@@ -1738,6 +1909,14 @@ export class ResourceAdminComponent implements OnInit {
       cost,
 
       availability,
+
+      eligibility: this.form.eligibility.trim(),
+      documentsNeeded: this.form.documentsNeeded.trim(),
+      howToApply: this.form.howToApply.trim(),
+      applyUrl,
+      languages,
+      serviceArea: this.form.serviceArea.trim(),
+      sourceUrl,
 
       online: this.form.online,
 
@@ -1850,6 +2029,14 @@ export class ResourceAdminComponent implements OnInit {
       eventStart: resource.eventStart ?? '',
 
       eventEnd: resource.eventEnd ?? '',
+
+      eligibility: resource.eligibility ?? '',
+      documentsNeeded: resource.documentsNeeded ?? '',
+      howToApply: resource.howToApply ?? '',
+      applyUrl: resource.applyUrl ?? '',
+      languages: (resource.languages ?? []).join(', '),
+      serviceArea: resource.serviceArea ?? '',
+      sourceUrl: resource.sourceUrl ?? '',
 
       checkedToday: false,
     };
@@ -2027,6 +2214,14 @@ export class ResourceAdminComponent implements OnInit {
 
       eventStart: '',
       eventEnd: '',
+
+      eligibility: '',
+      documentsNeeded: '',
+      howToApply: '',
+      applyUrl: '',
+      languages: '',
+      serviceArea: '',
+      sourceUrl: '',
 
       checkedToday: false,
     };

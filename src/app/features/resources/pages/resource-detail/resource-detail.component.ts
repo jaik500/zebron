@@ -3,6 +3,7 @@ import { DatePipe, Location, isPlatformBrowser } from '@angular/common';
 import { Meta, Title } from '@angular/platform-browser';
 import { Router, RouterLink } from '@angular/router';
 
+import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { HotToastService } from '@ngxpert/hot-toast';
 
@@ -28,6 +29,7 @@ import { BootcampService, PAGE_STATS_ID } from '../../../bootcamps/bootcamp.serv
 import { BootcampFieldsComponent } from '../../../bootcamps/bootcamp-fields.component';
 import { ResourceActionType, resourceKind } from '../../resource-kinds';
 import { ResourceStore } from '../../stores/resource.store';
+import { REPORT_DETAILS_MAX, REPORT_REASONS, ResourceReportReason, ResourceReportService } from '../../resource-report.service';
 
 /** One way to get help, shown in the "how to get this help" card. */
 interface ResourceAction {
@@ -68,7 +70,7 @@ const DAYS: { key: keyof Availability; label: string }[] = [
 @Component({
   selector: 'app-resource-detail',
   standalone: true,
-  imports: [DatePipe, RouterLink, MatIconModule, BootcampFieldsComponent],
+  imports: [DatePipe, FormsModule, RouterLink, MatIconModule, BootcampFieldsComponent],
   template: `
     <main class="mt-16 min-h-screen overflow-x-clip bg-gray-50">
       <!-- ===================== Action bar (the universal header shows "Resources" or "Bootcamps") ===================== -->
@@ -173,6 +175,10 @@ const DAYS: { key: keyof Availability; label: string }[] = [
                     @if (item.lastVerifiedAt) {
                       <span class="text-gray-500">· {{ item.lastVerifiedAt.toDate() | date: 'MMM d, y' }}</span>
                     }
+                    @if (item.sourceUrl) {
+                      <span class="text-gray-500">·</span>
+                      <a [href]="item.sourceUrl" target="_blank" rel="noopener noreferrer" class="font-medium text-[#007979] hover:underline">Source<span class="sr-only"> (opens another site)</span></a>
+                    }
                   } @else {
                     <mat-icon class="!h-4 !w-4 !text-base text-gray-400" aria-hidden="true">help</mat-icon>
                     <span class="text-gray-500">Not yet verified. Confirm details with the provider.</span>
@@ -257,10 +263,51 @@ const DAYS: { key: keyof Availability; label: string }[] = [
               } @else {
                 <p class="mt-2 text-sm text-gray-600">No contact details are listed yet. Ask our assistant or contact us and we'll help you reach them.</p>
               }
-              <p class="mt-4 border-t border-gray-100 pt-3 text-xs text-gray-500">
-                Zebron lists this resource to help you; we are not the provider.
-                <a routerLink="/contact" class="font-medium text-[#007979] hover:underline">Report a problem</a>
-              </p>
+              <div class="mt-4 border-t border-gray-100 pt-3 text-xs text-gray-500">
+                <p>
+                  Zebron lists this resource to help you; we are not the provider.
+                  @if (reportState() === 'idle') {
+                    <button type="button" (click)="reportState.set('open')" class="font-medium text-[#007979] hover:underline">Report a problem</button>
+                  }
+                </p>
+                @if (reportState() === 'open' || reportState() === 'sending') {
+                  <form class="mt-3 space-y-2.5" (ngSubmit)="sendReport(item.id, item.name, item.slug)" aria-label="Report a problem with this listing">
+                    <label class="block">
+                      <span class="block text-xs font-semibold text-gray-700">What is wrong?</span>
+                      <select name="reportReason" [(ngModel)]="reportReason" required
+                        class="mt-1 w-full rounded-lg border border-gray-300 bg-white px-2.5 py-2 text-sm text-gray-800 focus:border-[#007979] focus:outline-none">
+                        @for (reason of reportReasons; track reason.value) {
+                          <option [ngValue]="reason.value">{{ reason.label }}</option>
+                        }
+                      </select>
+                    </label>
+                    <label class="block">
+                      <span class="block text-xs font-semibold text-gray-700">Details <span class="font-normal text-gray-500">(optional)</span></span>
+                      <textarea name="reportDetails" [(ngModel)]="reportDetails" rows="3" [maxlength]="reportMax"
+                        placeholder="For example: the new number is 301-555-0100"
+                        class="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-2 text-sm text-gray-800 focus:border-[#007979] focus:outline-none"></textarea>
+                    </label>
+                    <label class="block">
+                      <span class="block text-xs font-semibold text-gray-700">Your email <span class="font-normal text-gray-500">(optional, if we may ask you about it)</span></span>
+                      <input name="reportEmail" type="email" [(ngModel)]="reportEmail" maxlength="200" autocomplete="email"
+                        class="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-2 text-sm text-gray-800 focus:border-[#007979] focus:outline-none" />
+                    </label>
+                    <div class="flex gap-2">
+                      <button type="submit" [disabled]="reportState() === 'sending'"
+                        class="inline-flex h-9 items-center rounded-lg bg-[#007979] px-3 text-sm font-semibold text-white hover:bg-[#006666] disabled:opacity-60">
+                        {{ reportState() === 'sending' ? 'Sending…' : 'Send report' }}
+                      </button>
+                      <button type="button" (click)="reportState.set('idle')" class="inline-flex h-9 items-center rounded-lg px-3 text-sm font-medium text-gray-600 hover:bg-gray-100">Cancel</button>
+                    </div>
+                  </form>
+                }
+                @if (reportState() === 'sent') {
+                  <p class="mt-2 flex items-start gap-1.5 rounded-lg bg-green-50 px-2.5 py-2 text-sm text-green-800" role="status">
+                    <mat-icon class="!h-4 !w-4 shrink-0 !text-base" aria-hidden="true">check_circle</mat-icon>
+                    Thank you. We'll check this listing and correct it.
+                  </p>
+                }
+              </div>
             </section>
 
             <!-- ===================== Main column ===================== -->
@@ -276,6 +323,51 @@ const DAYS: { key: keyof Availability; label: string }[] = [
                   </ul>
                 }
               </section>
+
+              <!-- Before you go: eligibility, documents, how to apply, languages, area -->
+              @if (item.eligibility || item.documentsNeeded || item.howToApply || item.languages?.length || item.serviceArea) {
+                <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6" aria-labelledby="before-title">
+                  <h2 id="before-title" class="text-base font-bold text-[#032D42]">Before you go</h2>
+                  <dl class="mt-3 space-y-4 text-sm leading-6 text-gray-700">
+                    @if (item.eligibility) {
+                      <div>
+                        <dt class="flex items-center gap-1.5 font-semibold text-[#032D42]"><mat-icon class="!h-4 !w-4 !text-base text-[#007979]" aria-hidden="true">how_to_reg</mat-icon>Who can use it</dt>
+                        <dd class="mt-0.5 whitespace-pre-line [overflow-wrap:anywhere]">{{ item.eligibility }}</dd>
+                      </div>
+                    }
+                    @if (documentLines().length) {
+                      <div>
+                        <dt class="flex items-center gap-1.5 font-semibold text-[#032D42]"><mat-icon class="!h-4 !w-4 !text-base text-[#007979]" aria-hidden="true">description</mat-icon>What to bring</dt>
+                        <dd class="mt-0.5">
+                          <ul class="list-disc space-y-0.5 pl-5">
+                            @for (line of documentLines(); track $index) {
+                              <li class="[overflow-wrap:anywhere]">{{ line }}</li>
+                            }
+                          </ul>
+                        </dd>
+                      </div>
+                    }
+                    @if (item.howToApply) {
+                      <div>
+                        <dt class="flex items-center gap-1.5 font-semibold text-[#032D42]"><mat-icon class="!h-4 !w-4 !text-base text-[#007979]" aria-hidden="true">checklist</mat-icon>How to apply</dt>
+                        <dd class="mt-0.5 whitespace-pre-line [overflow-wrap:anywhere]">{{ item.howToApply }}</dd>
+                      </div>
+                    }
+                    @if (item.languages?.length) {
+                      <div>
+                        <dt class="flex items-center gap-1.5 font-semibold text-[#032D42]"><mat-icon class="!h-4 !w-4 !text-base text-[#007979]" aria-hidden="true">translate</mat-icon>Languages</dt>
+                        <dd class="mt-0.5">{{ item.languages!.join(', ') }}</dd>
+                      </div>
+                    }
+                    @if (item.serviceArea) {
+                      <div>
+                        <dt class="flex items-center gap-1.5 font-semibold text-[#032D42]"><mat-icon class="!h-4 !w-4 !text-base text-[#007979]" aria-hidden="true">map</mat-icon>Area served</dt>
+                        <dd class="mt-0.5 [overflow-wrap:anywhere]">{{ item.serviceArea }}</dd>
+                      </div>
+                    }
+                  </dl>
+                </section>
+              }
 
               <!-- Programs (bootcamps and any resource with programs) -->
               @if (programs().length) {
@@ -565,6 +657,45 @@ const DAYS: { key: keyof Availability; label: string }[] = [
 })
 export class ResourceDetailComponent {
   private readonly resourceStore = inject(ResourceStore);
+  private readonly reportService = inject(ResourceReportService);
+
+  // ---- Report a problem ----
+  protected readonly reportReasons = REPORT_REASONS;
+  protected readonly reportMax = REPORT_DETAILS_MAX;
+  protected readonly reportState = signal<'idle' | 'open' | 'sending' | 'sent'>('idle');
+  protected reportReason: ResourceReportReason = 'closed';
+  protected reportDetails = '';
+  protected reportEmail = '';
+
+  protected async sendReport(resourceId: string, resourceName: string, resourceSlug: string): Promise<void> {
+    if (this.reportState() === 'sending') {
+      return;
+    }
+    this.reportState.set('sending');
+    try {
+      await this.reportService.submit({
+        resourceId,
+        resourceName,
+        resourceSlug,
+        reason: this.reportReason,
+        details: this.reportDetails,
+        contactEmail: this.reportEmail,
+      });
+      this.reportState.set('sent');
+      this.reportDetails = '';
+    } catch {
+      this.reportState.set('open');
+      this.toast.error('Your report could not be sent. Please try again, or use the Contact page.');
+    }
+  }
+
+  /** "What to bring", one item per line. */
+  protected readonly documentLines = computed(() =>
+    (this.resource()?.documentsNeeded ?? '')
+      .split(/\r?\n/)
+      .map((line) => line.replace(/^[-•*]\s*/, '').trim())
+      .filter(Boolean),
+  );
   private readonly title = inject(Title);
   private readonly meta = inject(Meta);
   private readonly document = inject(DOCUMENT);
@@ -680,6 +811,17 @@ export class ResourceDetailComponent {
       });
     }
 
+    if (!found.has('apply') && resource.applyUrl) {
+      found.set('apply', {
+        type: 'apply',
+        label: 'Apply',
+        detail: host(resource.applyUrl),
+        icon: 'how_to_reg',
+        href: resource.applyUrl,
+        external: true,
+      });
+    }
+
     if (resource.website) {
       found.set('website', {
         type: 'website',
@@ -711,8 +853,9 @@ export class ResourceDetailComponent {
       });
     }
 
-    return this.kind()
-      .actionOrder.map((type) => found.get(type))
+    const order = this.kind().actionOrder;
+    return (order.includes('apply') ? order : (['apply', ...order] as ResourceActionType[]))
+      .map((type) => found.get(type))
       .filter((action): action is ResourceAction => !!action);
   });
 

@@ -12,8 +12,9 @@ import { isPlatformAdministrator } from "./platform-admin-authorization";
  *
  * - Broken links: every published resource's website, every topic link
  *   (Admin → Topics) and every bootcamp program's Apply link.
- * - Out of date: published resources never verified, or verified more
- *   than STALE_DAYS ago.
+ * - Due for review: published resources never verified, or verified longer
+ *   ago than their category's review interval (reviewIntervalDays on the
+ *   category, else the default for its kind; see reviewDaysFor).
  * - Possible duplicates: published resources with the same name, phone
  *   number or website.
  *
@@ -24,7 +25,39 @@ import { isPlatformAdministrator } from "./platform-admin-authorization";
 
 const REGION = "us-central1";
 const TIME_ZONE = "America/New_York";
-const STALE_DAYS = 365;
+/**
+ * Review intervals in days. Mirrors src/app/features/resources/resource-review.ts
+ * and the kind keywords in resource-kinds.ts: keep them in step.
+ */
+const CRISIS_REVIEW_DAYS = 30;
+const CRISIS_WORDS = /crisis|hotline|emergenc|suicide|shelter|domestic/i;
+const KIND_REVIEW_DAYS: Array<{ keywords: string[]; days: number }> = [
+  { keywords: ["bootcamp", "coding"], days: 180 },
+  { keywords: ["education", "language", "esl", "english", "training", "school", "literacy"], days: 180 },
+  { keywords: ["employment", "job", "career", "workforce"], days: 90 },
+  { keywords: ["legal", "immigration", "law", "attorney", "asylum", "citizenship"], days: 90 },
+  { keywords: ["health", "medical", "clinic", "dental", "mental"], days: 90 },
+  { keywords: ["housing", "shelter", "rent", "home"], days: 60 },
+  { keywords: ["food", "pantry", "meal", "nutrition"], days: 60 },
+  { keywords: ["business", "entrepreneur", "startup", "small business"], days: 180 },
+  { keywords: ["government", "public", "benefit"], days: 60 },
+];
+const GENERAL_REVIEW_DAYS = 180;
+
+export function reviewDaysFor(category: { name?: unknown; slug?: unknown; reviewIntervalDays?: unknown } | undefined): number {
+  const own = category?.reviewIntervalDays;
+  if (typeof own === "number" && Number.isFinite(own) && own >= 7 && own <= 730) {
+    return Math.round(own);
+  }
+  const text = `${String(category?.slug ?? "")} ${String(category?.name ?? "")}`.toLowerCase();
+  if (CRISIS_WORDS.test(text)) {
+    return CRISIS_REVIEW_DAYS;
+  }
+  if (!text.trim()) {
+    return GENERAL_REVIEW_DAYS;
+  }
+  return KIND_REVIEW_DAYS.find((kind) => kind.keywords.some((word) => text.includes(word)))?.days ?? GENERAL_REVIEW_DAYS;
+}
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_ITEMS = 300;
 
@@ -69,11 +102,13 @@ const normalizeSite = (value: string) => {
 export async function runContentChecks(trigger: "schedule" | "manual", uid = ""): Promise<ContentCheckSummary> {
   const started = Date.now();
   const db = getFirestore();
-  const [resourcesSnap, topicsSnap, bootcampsSnap] = await Promise.all([
+  const [resourcesSnap, topicsSnap, bootcampsSnap, categoriesSnap] = await Promise.all([
     db.collection("resources").where("status", "==", "published").get(),
     db.collection("resourceTopics").get(),
     db.collection("bootcamps").get(),
+    db.collection("categories").get(),
   ]);
+  const categoryById = new Map(categoriesSnap.docs.map((doc) => [doc.id, doc.data() as Record<string, unknown>]));
 
   type ResourceData = Record<string, unknown> & { id: string };
   const resources: ResourceData[] = resourcesSnap.docs.map((doc) => ({ ...(doc.data() as Record<string, unknown>), id: doc.id }));
@@ -86,6 +121,14 @@ export async function runContentChecks(trigger: "schedule" | "manual", uid = "")
     const website = String(resource["website"] ?? "").trim();
     if (website) {
       sources.push({ url: website, where: "Resource website", resourceId: resource.id, resourceSlug: slugOf.get(resource.id), name: nameOf.get(resource.id)! });
+    }
+    const applyUrl = String(resource["applyUrl"] ?? "").trim();
+    if (/^https?:\/\//i.test(applyUrl)) {
+      sources.push({ url: applyUrl, where: "Application link", resourceId: resource.id, resourceSlug: slugOf.get(resource.id), name: nameOf.get(resource.id)! });
+    }
+    const sourceUrl = String(resource["sourceUrl"] ?? "").trim();
+    if (/^https?:\/\//i.test(sourceUrl)) {
+      sources.push({ url: sourceUrl, where: "Source", resourceId: resource.id, resourceSlug: slugOf.get(resource.id), name: nameOf.get(resource.id)! });
     }
   }
   for (const doc of topicsSnap.docs) {
@@ -132,11 +175,21 @@ export async function runContentChecks(trigger: "schedule" | "manual", uid = "")
   const now = Date.now();
   const stale = resources
     .map((resource) => {
-      const verified = resource["lastVerifiedAt"] instanceof Timestamp ? (resource["lastVerifiedAt"] as Timestamp).toMillis() : 0;
-      return { resourceId: resource.id, resourceSlug: slugOf.get(resource.id) ?? "", name: nameOf.get(resource.id)!, lastVerifiedAt: verified ? Timestamp.fromMillis(verified) : null, days: verified ? Math.floor((now - verified) / DAY_MS) : null };
+      const verified = resource["verified"] === true && resource["lastVerifiedAt"] instanceof Timestamp ? (resource["lastVerifiedAt"] as Timestamp).toMillis() : 0;
+      const intervalDays = reviewDaysFor(categoryById.get(String(resource["categoryId"] ?? "")));
+      const days = verified ? Math.floor((now - verified) / DAY_MS) : null;
+      return {
+        resourceId: resource.id,
+        resourceSlug: slugOf.get(resource.id) ?? "",
+        name: nameOf.get(resource.id)!,
+        lastVerifiedAt: verified ? Timestamp.fromMillis(verified) : null,
+        days,
+        intervalDays,
+        overdueDays: days === null ? null : days - intervalDays,
+      };
     })
-    .filter((item) => item.days === null || item.days > STALE_DAYS)
-    .sort((a, b) => (b.days ?? 99999) - (a.days ?? 99999))
+    .filter((item) => item.days === null || item.days > item.intervalDays)
+    .sort((a, b) => (b.overdueDays ?? 99999) - (a.overdueDays ?? 99999))
     .slice(0, MAX_ITEMS);
 
   // ---------------- Possible duplicates ----------------
@@ -174,7 +227,7 @@ export async function runContentChecks(trigger: "schedule" | "manual", uid = "")
   await db.collection("contentChecks").doc("latest").set({
     ...summary,
     resourcesChecked: resources.length,
-    staleDays: STALE_DAYS,
+    staleDays: null,
     brokenLinks: broken,
     blockedLinks: blocked,
     staleResources: stale,
