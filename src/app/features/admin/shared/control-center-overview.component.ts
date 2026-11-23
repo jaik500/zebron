@@ -7,6 +7,7 @@ import { httpsCallable } from 'firebase/functions';
 import { firebaseFunctions } from '../../../core/services/firebase-config';
 import { FeatureConfigService } from '../../../core/services/feature-config.service';
 import { MaintenanceService } from '../../../core/services/maintenance.service';
+import { BackupStatusCardComponent } from '../pages/backups/backup-status-card.component';
 
 /** Answer from the getControlCenterSummary function; null = could not count. */
 interface ControlCenterSummary {
@@ -32,12 +33,13 @@ interface Tile {
 
 /**
  * Control Center -> Overview: what needs attention now. Every number
- * links to the page where you deal with it.
+ * links to the page where you deal with it. The Backups tile
+ * (BackupStatusCardComponent) tracks platform backups live.
  */
 @Component({
   selector: 'app-configuration-overview',
   standalone: true,
-  imports: [RouterLink, MatButtonModule, MatIconModule],
+  imports: [RouterLink, MatButtonModule, MatIconModule, BackupStatusCardComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="space-y-5">
@@ -91,6 +93,11 @@ interface Tile {
           </div>
         </div>
       }
+
+      <div>
+        <h3 class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Backups</h3>
+        <app-backup-status-card />
+      </div>
 
       @if (switchedOff().length > 0) {
         <div>
