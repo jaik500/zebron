@@ -32,6 +32,7 @@ import {
   BlogReactionType,
   BLOG_REACTIONS,
 } from './blog.model';
+import { sanitizeRelated } from './related-links';
 
 const FEED_LIMIT = 60;
 const MANAGE_LIMIT = 100;
@@ -73,6 +74,7 @@ export class BlogService {
       updatedAt: (data['updatedAt'] as Timestamp | null) ?? null,
       publishedAt: (data['publishedAt'] as Timestamp | null) ?? null,
       publishAt: (data['publishAt'] as Timestamp | null) ?? null,
+      related: sanitizeRelated(data['related']),
     };
   }
 

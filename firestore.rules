@@ -5156,7 +5156,9 @@ service cloud.firestore {
         && data.organizationId == organizationId
         && data.authorId is string
         && data.authorName is string
-        && data.pinned is bool;
+        && data.pinned is bool
+        // "Continue on Zebron" links (related-links.ts): at most 8.
+        && (!data.keys().hasAny(["related"]) || (data.related is list && data.related.size() <= 8));
     }
 
     function isValidBlogComment() {

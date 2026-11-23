@@ -33,13 +33,14 @@ import {
   isBlogImageSource,
 } from '../blog.model';
 import { BlogStore } from '../blog.store';
+import { ContinueOnZebronComponent } from '../components/continue-on-zebron.component';
 
 /** One blog post: article, contents list, reactions and comments. */
 @Component({
   selector: 'app-blog-post',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgClass, RouterLink, FormsModule, MatIconModule, TranslatePipe],
+  imports: [NgClass, RouterLink, FormsModule, MatIconModule, TranslatePipe, ContinueOnZebronComponent],
   styles: [
     `
       :host ::ng-deep .blog-prose h2 { font-size: 1.4rem; font-weight: 700; margin: 2rem 0 0.6rem; color: #032d42; scroll-margin-top: 5rem; }
@@ -153,6 +154,8 @@ import { BlogStore } from '../blog.store';
               }
 
               <div #prose class="blog-prose text-[17px] leading-8 text-slate-800" [innerHTML]="html()"></div>
+
+              <app-continue-on-zebron [links]="post.related" />
 
               @if (post.status === 'published') {
                 <!-- Reactions -->

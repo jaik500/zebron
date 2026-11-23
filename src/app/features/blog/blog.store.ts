@@ -22,6 +22,7 @@ import {
   readingMinutes,
   sameBlogContext,
 } from './blog.model';
+import { sanitizeRelated } from './related-links';
 import { BlogService } from './blog.service';
 
 /** What the editor's main button does. */
@@ -371,6 +372,7 @@ export const BlogStore = signalStore(
               coverImage: draft.coverImage?.trim() || null,
               coverImageAlt: draft.coverImageAlt.trim(),
               pinned: draft.pinned,
+              related: sanitizeRelated(draft.related),
               readingMinutes: readingMinutes(draft.content),
               status,
               reviewNote: null,

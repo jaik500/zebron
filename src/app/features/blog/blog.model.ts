@@ -1,5 +1,7 @@
 import { Timestamp } from 'firebase/firestore';
 
+import { RelatedLink } from './related-links';
+
 /**
  * Zebron Blog
  *
@@ -70,11 +72,14 @@ export interface BlogPost {
   publishedAt: Timestamp | null;
   /** When a scheduled post goes live. */
   publishAt: Timestamp | null;
+
+  /** "Continue on Zebron" links shown at the end (see related-links.ts). */
+  related: RelatedLink[];
 }
 
 export type BlogPostDraft = Pick<
   BlogPost,
-  'title' | 'excerpt' | 'content' | 'topic' | 'cover' | 'coverImage' | 'coverImageAlt' | 'pinned'
+  'title' | 'excerpt' | 'content' | 'topic' | 'cover' | 'coverImage' | 'coverImageAlt' | 'pinned' | 'related'
 >;
 
 export interface BlogComment {

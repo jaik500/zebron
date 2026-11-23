@@ -36,6 +36,8 @@ import {
   isBlogImageSource,
 } from '../blog.model';
 import { BlogService } from '../blog.service';
+import { RelatedLink } from '../related-links';
+import { RelatedLinksEditorComponent } from '../components/related-links-editor.component';
 import { BlogSaveAction, BlogStore } from '../blog.store';
 
 interface FormatTool {
@@ -63,6 +65,7 @@ interface FormatTool {
     MatInputModule,
     MatSelectModule,
     TranslatePipe,
+    RelatedLinksEditorComponent,
   ],
   template: `
     <main class="mt-16 min-h-screen bg-slate-50">
@@ -285,6 +288,7 @@ interface FormatTool {
 
             <!-- Publishing -->
             <aside class="space-y-4">
+
               <section class="rounded-xl border border-slate-200 bg-white p-4">
                 <h2 class="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">{{ 'Publishing' | t }}</h2>
 
@@ -361,6 +365,15 @@ interface FormatTool {
                 }
               </section>
 
+              <!-- "Continue on Zebron" links at the end of the post -->
+              <app-related-links-editor
+                [(links)]="related"
+                [postTitle]="title"
+                [postExcerpt]="excerpt"
+                [postTopic]="topic"
+                [postContent]="content"
+              />
+
               <section class="rounded-xl border border-slate-200 bg-white p-4 text-xs leading-5 text-slate-500">
                 <h2 class="mb-2 font-semibold uppercase tracking-wider">{{ 'Formatting' | t }}</h2>
                 <p># {{ 'Section heading' | t }} · **{{ 'bold' | t }}** · *{{ 'italic' | t }}* · - {{ 'list' | t }} · > {{ 'quote' | t }} · [text](https://…)</p>
@@ -433,6 +446,7 @@ export class BlogEditorComponent implements OnInit {
   protected content = '';
   protected topic = this.topics[0];
   protected pinned = false;
+  protected related: RelatedLink[] = [];
   protected when: 'now' | 'later' = 'now';
   protected publishAt = '';
   protected readonly minPublishAt = this.localDateTime(new Date(Date.now() + 5 * 60_000));
@@ -489,6 +503,7 @@ export class BlogEditorComponent implements OnInit {
     this.content = post.content;
     this.topic = post.topic || this.topics[0];
     this.pinned = post.pinned;
+    this.related = post.related;
     this.cover.set(post.cover);
     this.coverImage.set(post.coverImage ?? '');
     this.coverImageAlt = post.coverImageAlt;
@@ -543,6 +558,7 @@ export class BlogEditorComponent implements OnInit {
       coverImage: this.coverPreview(),
       coverImageAlt: this.coverImageAlt,
       pinned: this.canPublish() ? this.pinned : (this.existing()?.pinned ?? false),
+      related: this.related,
     };
 
     const id = await this.store.savePost(this.postId, draft, action, scheduledFor);

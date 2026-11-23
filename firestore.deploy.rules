@@ -3661,7 +3661,8 @@ return data.title is string
 && data.organizationId == organizationId
 && data.authorId is string
 && data.authorName is string
-&& data.pinned is bool;
+&& data.pinned is bool
+&& (!data.keys().hasAny(["related"]) || (data.related is list && data.related.size() <= 8));
 }
 function isValidBlogComment() {
 let data = request.resource.data;
