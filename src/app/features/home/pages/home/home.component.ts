@@ -189,7 +189,7 @@ interface HomeStat {
               </button>
             </form>
 
-            <!-- Actions. Phones: two per row (Register + Sign in, or Explore + Blog). -->
+            <!-- Actions. Phones: two per row (Register + Sign in, or Explore + Profile). -->
             <div class="home-rise mt-8 grid grid-cols-2 gap-3 sm:flex sm:flex-wrap" style="--rise-delay: 420ms">
               <a
                 routerLink="/resources"
@@ -218,13 +218,24 @@ interface HomeStat {
                 </a>
               }
 
-              <a
-                routerLink="/blog"
-                class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-white/25 bg-white/5 px-4 py-1.5 text-sm font-bold text-white transition hover:bg-white/10"
-              >
-                <mat-icon aria-hidden="true" class="!m-0 !h-5 !w-5 !text-[18px]">article</mat-icon>
-                {{ t().blogLink }}
-              </a>
+              <!-- Signed in: Profile. Signed out: Blog (a profile needs an account). -->
+              @if (signedOut()) {
+                <a
+                  routerLink="/blog"
+                  class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-white/25 bg-white/5 px-4 py-1.5 text-sm font-bold text-white transition hover:bg-white/10"
+                >
+                  <mat-icon aria-hidden="true" class="!m-0 !h-5 !w-5 !text-[18px]">article</mat-icon>
+                  {{ t().blogLink }}
+                </a>
+              } @else {
+                <a
+                  routerLink="/profile"
+                  class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-white/25 bg-white/5 px-4 py-1.5 text-sm font-bold text-white transition hover:bg-white/10"
+                >
+                  <mat-icon aria-hidden="true" class="!m-0 !h-5 !w-5 !text-[18px]">account_circle</mat-icon>
+                  {{ t().profileLink }}
+                </a>
+              }
 
               <!-- Zebron administrators only: straight to the admin dashboard -->
               @if (isAdmin()) {
@@ -245,6 +256,27 @@ interface HomeStat {
                 {{ t().donate }}
               </a>
             </div>
+
+            <!-- Signed in: who it is, and a quiet Sign out link -->
+            @if (signedInName(); as name) {
+              <p class="home-rise mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-white/70" style="--rise-delay: 480ms">
+                @if (signedInPhoto(); as photo) {
+                  <img [src]="photo" alt="" class="h-6 w-6 rounded-full object-cover ring-1 ring-white/30" referrerpolicy="no-referrer" />
+                } @else {
+                  <span class="flex h-6 w-6 items-center justify-center rounded-full bg-[#65CFCF] text-[10px] font-extrabold text-[#032D42]" aria-hidden="true">{{ signedInInitials() }}</span>
+                }
+                <span>{{ t().signedInAs }} <span class="font-semibold text-white">{{ name }}</span></span>
+                <span aria-hidden="true" class="text-white/30">·</span>
+                <button
+                  type="button"
+                  class="font-semibold text-white underline decoration-white/40 underline-offset-4 transition hover:decoration-white disabled:opacity-60"
+                  [disabled]="signingOut()"
+                  (click)="signOut()"
+                >
+                  {{ t().signOut }}
+                </button>
+              </p>
+            }
           </div>
 
           <!-- Orbit of topics around the brand "e" (large screens) -->
@@ -788,6 +820,36 @@ export class HomeComponent {
 
   /** Show Create account / Sign in only to visitors who aren't signed in. */
   protected readonly signedOut = computed(() => !this.auth.isLoading() && !this.auth.firebaseUser());
+  /** Signed in: the name shown in "Signed in as …" (first or preferred name, else the display name or email). */
+  protected readonly signedInName = computed(() => {
+    if (this.auth.isLoading() || !this.auth.firebaseUser()) return null;
+    const user = this.auth.user() as { displayName?: string; firstName?: string; preferredName?: string } | null;
+    const name = user?.preferredName?.trim() || user?.firstName?.trim() || user?.displayName?.trim() || this.auth.firebaseUser()?.email || '';
+    return name || null;
+  });
+  protected readonly signedInPhoto = computed(() => (this.auth.user() as { photoUrl?: string } | null)?.photoUrl || null);
+  protected readonly signedInInitials = computed(() =>
+    (this.signedInName() ?? '')
+      .split(/[\s@.]+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]!.toUpperCase())
+      .join(''),
+  );
+  protected readonly signingOut = signal(false);
+
+  protected async signOut(): Promise<void> {
+    if (this.signingOut()) return;
+    this.signingOut.set(true);
+    try {
+      await this.auth.logout();
+    } catch {
+      // The profile menu offers Sign out too; nothing else to do here.
+    } finally {
+      this.signingOut.set(false);
+    }
+  }
+
   /** Zebron administrator (AuthService.isAdmin): shows the Admin button. The admin pages check again. */
   protected readonly isAdmin = computed(() => !this.auth.isLoading() && !!this.auth.firebaseUser() && this.auth.isAdmin);
 
