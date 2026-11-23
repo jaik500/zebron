@@ -15,10 +15,12 @@ export interface BackButtonOptions {
 /**
  * The back arrow in the top bar (zebron-header.component.ts).
  *
- * - **Shown** on every screen size, in the browser and the installed app,
- *   whenever there is an earlier Zebron page to return to. With none (the
+ * - **Shown** on computers (lg and up; on phones and tablets the browser's
+ *   buttons or, in the installed app, app-nav-bar go back), whenever there is an earlier Zebron page to return to. With none (the
  *   first page of a visit) it shows only below main pages, to go up. Pages
  *   with their own back control hide it (`useBackButton({ hidden: true })`).
+ * - **Forward** (the app's navigation bar, app-nav-bar.component.ts) goes
+ *   to a page you went back from, until you open a new page.
  * - **Back** returns to the previous Zebron page in this visit. With none
  *   (opened from a shortcut, link or notification), or when that page is
  *   sign-in, it goes to the page above (core/navigation/back-navigation.ts)
@@ -32,6 +34,8 @@ export class BackNavigationService {
 
   /** Zebron addresses visited in this visit, oldest first (in step with the browser history). */
   private readonly history: string[] = [];
+  /** Pages gone back from, newest last (for Forward in the app's navigation bar). */
+  private readonly forwardPages: string[] = [];
   private trigger: 'imperative' | 'popstate' | 'hashchange' = 'imperative';
   private replacing = false;
   private patterns: RoutePattern[] | null = null;
@@ -47,6 +51,13 @@ export class BackNavigationService {
 
   /** Show the arrow in the top bar. */
   readonly visible = computed(() => !this.options().hidden && (this.hasPrevious() || !isMainPage(this.url())));
+
+  /** Back can go somewhere (the app's navigation bar; ignores pages that hide the top-bar arrow). */
+  readonly canGoBack = computed(() => this.hasPrevious() || !isMainPage(this.url()));
+
+  private readonly forwardCount = signal(0);
+  /** There is a page to go forward to (after going back). */
+  readonly canGoForward = computed(() => this.forwardCount() > 0);
 
   constructor() {
     if (!this.browser) return;
@@ -83,6 +94,11 @@ export class BackNavigationService {
     void this.router.navigateByUrl(target, { replaceUrl: true });
   }
 
+  /** Go forward again after going back (like a browser's Forward button). */
+  forward(): void {
+    if (this.forwardPages.length) this.location.forward();
+  }
+
   /** Used by `useBackButton`; returns a function that removes the setting. */
   register(options: BackButtonOptions): () => void {
     const id = ++this.nextId;
@@ -92,13 +108,25 @@ export class BackNavigationService {
 
   private record(url: string): void {
     if (this.trigger === 'popstate') {
-      // Browser back or forward: back if it matches the page before.
-      if (this.history.at(-2) === url) this.history.pop();
-      else if (this.history.at(-1) !== url) this.history.push(url);
+      // Browser back or forward: back if it matches the page before, forward if it matches the page gone back from.
+      if (this.history.at(-2) === url) {
+        const left = this.history.pop();
+        if (left) this.forwardPages.push(left);
+      } else if (this.history.at(-1) !== url) {
+        if (this.forwardPages.at(-1) === url) this.forwardPages.pop();
+        else this.forwardPages.length = 0;
+        this.history.push(url);
+      }
+      this.forwardCount.set(this.forwardPages.length);
       return;
     }
     if (this.replacing && this.history.length) this.history[this.history.length - 1] = url;
-    else if (this.history.at(-1) !== url) this.history.push(url);
+    else if (this.history.at(-1) !== url) {
+      this.history.push(url);
+      // A new page: nothing to go forward to any more (as in a browser).
+      this.forwardPages.length = 0;
+    }
+    this.forwardCount.set(this.forwardPages.length);
   }
 
   private routePatterns(): RoutePattern[] {

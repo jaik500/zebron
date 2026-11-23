@@ -4,7 +4,7 @@ Give this file to an AI assistant (or a new developer) at the start of any
 work on Zebron. It explains what Zebron is, how it is built, where things
 live, the rules every change follows, and how we work together.
 
-- **Last updated:** 22 November 2026 (guide edition 123)
+- **Last updated:** 22 November 2026 (guide edition 126)
 - **Also in the Knowledge Center** as "Zebron platform overview for the team" (support and developers), and introduced on the Internal Blog in "How Zebron works: one page for the whole team" (`scripts/seed-blog-zebron-context.mjs`).
 - **Keep it current:** when a change makes anything here wrong (a new
   application, folder, collection, function, rule or way of working), update
@@ -274,8 +274,10 @@ Secrets (Secret Manager, `firebase functions:secrets:set NAME`):
   can also colour the e (`letter`: sparkler gold, paper-cut red and gold)
   and turn the home circle into a Christmas ornament.
   The top bar has a small back arrow on every page reached from another
-  page, on all screens (`BackNavigationService`; pages adjust it with
-  `useBackButton`), and on
+  page (`BackNavigationService`; pages adjust it with `useBackButton`), on
+  computers (`lg` up) only. In the installed app on phones and tablets a
+  navigation bar (`app-nav-bar`: Back, Forward, Home, Refresh, ⋯ language)
+  slides up while scrolling and hides 5 s later; and on
   phones and tablets signed-in people pick the language in the ☰ menu.
 - **Coding Lab:** learner code runs in Web Workers inside a sandboxed iframe
   (`public/coding-lab/sandbox.html`, opaque origin) started by

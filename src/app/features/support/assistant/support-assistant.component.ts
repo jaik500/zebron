@@ -78,7 +78,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
     @if (!open()) {
       <button
         type="button"
-        class="fixed bottom-5 right-5 z-40 flex h-14 items-center gap-2 rounded-full bg-[#007979] px-5 text-white shadow-lg transition hover:bg-teal-700 focus:outline-none focus:ring-4 focus:ring-[#007979]/30"
+        class="fixed bottom-[calc(1.25rem+var(--zb-app-nav-offset,0px))] right-5 z-40 flex h-14 items-center gap-2 rounded-full bg-[#007979] px-5 text-white shadow-lg transition-all duration-300 hover:bg-teal-700 focus:outline-none focus:ring-4 focus:ring-[#007979]/30"
         [attr.aria-label]="'Open the Zebron help assistant' | t"
         (click)="open.set(true)"
       >

@@ -133,13 +133,15 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
         >
  
           <!-- =================================================
-               BACK (installed app and phones; BackNavigationService)
+               BACK (BackNavigationService). Computers only: on phones and
+               tablets the browser's buttons, or in the installed app the
+               navigation bar at the bottom (app-nav-bar), go back.
                ================================================= -->
 
           @if (back.visible()) {
             <button
               type="button"
-              class="-ml-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white transition hover:bg-white/10 focus:outline-none focus-visible:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/60"
+              class="-ml-1 hidden h-8 w-8 shrink-0 lg:flex items-center justify-center rounded-full text-white transition hover:bg-white/10 focus:outline-none focus-visible:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/60"
               [attr.aria-label]="'Back' | t"
               [title]="'Back' | t"
               (click)="back.back()"
@@ -329,6 +331,29 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
               >
                 <mat-icon>space_dashboard</mat-icon>
               </a>
+            }
+
+            <!-- =================================================
+                 REFRESH (installed app only: it has no browser reload button)
+                 ================================================= -->
+
+            @if (pwa.standalone()) {
+              <button
+                mat-icon-button
+                type="button"
+                [matTooltip]="'Refresh' | t"
+                [attr.aria-label]="'Refresh' | t"
+                class="
+                  !h-10
+                  !w-10
+                  !shrink-0
+                  !text-white
+                  hover:!bg-white/10
+                "
+                (click)="refresh()"
+              >
+                <mat-icon>refresh</mat-icon>
+              </button>
             }
 
             <!-- =================================================
@@ -596,6 +621,12 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
         </button>
       }
 
+      <!-- Refresh the page (and switch to a downloaded new version, if any). -->
+      <button mat-menu-item type="button" class="!h-9 !min-h-9" (click)="refresh()">
+        <mat-icon class="!mr-2 !h-[18px] !w-[18px] !text-[18px]">refresh</mat-icon>
+        <span class="text-sm">{{ 'Refresh' | t }}</span>
+      </button>
+
       @if (isSignedIn()) {
         <!-- Account: the user's name opens their profile -->
         <button
@@ -654,13 +685,21 @@ export class ZebronHeaderComponent {
   // =========================================================
  
   /**
-   * Platform links in the menu. Tax & Pay Calculator and Learning Lab
-   * stay reachable from All apps, not from this menu.
+   * Platform links in the menu. The Tax & Pay Calculator and Business stay
+   * reachable from All apps (Business also from the Admin dashboard), not
+   * from this menu. The learning app (/courses) shows as "Learning".
    */
-  private static readonly HIDDEN_MENU_KEYS = new Set(['tax-calculator', 'learning-lab']);
+  private static readonly HIDDEN_MENU_KEYS = new Set(['tax-calculator', 'business-operations']);
+  private static readonly MENU_LABELS: Record<string, string> = { 'learning-lab': 'Learning' };
 
   protected readonly platformMenuItems = computed(() =>
-    this.navigationService.visibleItems().filter((item) => !ZebronHeaderComponent.HIDDEN_MENU_KEYS.has(item.key)),
+    this.navigationService
+      .visibleItems()
+      .filter((item) => !ZebronHeaderComponent.HIDDEN_MENU_KEYS.has(item.key))
+      .map((item) => {
+        const label = ZebronHeaderComponent.MENU_LABELS[item.key];
+        return label ? { ...item, label } : item;
+      }),
   );
 
   protected readonly navigationService =
@@ -691,6 +730,14 @@ export class ZebronHeaderComponent {
   /** Language in the menu (phones and tablets). */
   protected readonly localization = inject(LocalizationService);
   protected readonly languageOpen = signal(false);
+
+  /**
+   * Reload the page. The installed app has no browser reload button; a new
+   * version that has already downloaded is switched to at the same time.
+   */
+  protected refresh(): void {
+    void this.pwa.reload();
+  }
 
   protected chooseLanguage(code: string): void {
     this.languageOpen.set(false);

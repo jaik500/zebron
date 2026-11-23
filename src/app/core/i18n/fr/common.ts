@@ -203,4 +203,7 @@ export const FR_COMMON: Readonly<Record<string, string>> = {
   'Reload': 'Recharger',
   'You\'re offline. Some pages need a connection.': 'Vous êtes hors ligne. Certaines pages nécessitent une connexion.',
   'Read kept documents': 'Lire les documents conservés',
+  // Installed app: navigation bar at the bottom (app-nav-bar)
+  'App navigation': "Navigation de l'application",
+  'Home': 'Accueil',
 };

@@ -25,6 +25,7 @@ import { ClaimsSyncService } from './core/services/claims-sync.service';
 import { AuthService } from './core/services/auth.service';
 import { SupportAssistantComponent } from './features/support/assistant/support-assistant.component';
 import { AppStatusComponent } from './shared/components/app-status/app-status.component';
+import { AppNavBarComponent } from './shared/components/app-nav-bar/app-nav-bar.component';
 import { OrganizationBrandingService } from './features/partner/branding/organization-branding';
 
 @Component({
@@ -36,6 +37,7 @@ import { OrganizationBrandingService } from './features/partner/branding/organiz
     ZebronHeaderComponent,
     SupportAssistantComponent,
     AppStatusComponent,
+    AppNavBarComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -79,6 +81,9 @@ import { OrganizationBrandingService } from './features/partner/branding/organiz
 
       <!-- New version ready / offline notices (installable app). -->
       <app-status />
+
+      <!-- Installed app on phones and tablets: Back, Forward, Home, Refresh and ⋯ at the bottom while scrolling. -->
+      <app-nav-bar />
 
     </div>
   `,
