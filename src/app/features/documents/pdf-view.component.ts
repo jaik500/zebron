@@ -17,12 +17,18 @@ import {
 import type { PDFDocumentLoadingTask, PDFDocumentProxy, PDFPageProxy, RenderTask } from 'pdfjs-dist';
 
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
+import { ReaderLinkService, createLinkService, hasFillableFields, renderFormLayer } from './pdf-forms';
 
 /**
  * Shows a PDF with pdf.js (pdfjs-dist), loaded only when a PDF is opened.
  * Pages are drawn when they come near the screen, with a selectable text
  * layer on top so text can be copied and read by screen readers. The PDF's
  * own scripts never run (no pdf.js scripting sandbox is loaded; XFA is off).
+ *
+ * Fillable forms: form fields are drawn as real inputs on top of the page
+ * (pdf-forms.ts); what the person types is kept in the document's
+ * annotationStorage and filledBytes() returns the PDF with the answers in it.
+ * Links in the PDF work too (web links open in a new tab).
  *
  * The worker, character maps, standard fonts and image decoders are served
  * from /pdfjs/ (angular.json copies them from node_modules/pdfjs-dist).
@@ -90,6 +96,64 @@ interface PageSlot {
     .zb-pdf-page .textLayer { mix-blend-mode: multiply; }
     .zb-pdf-page .textLayer mark { color: transparent !important; }
     .zb-pdf-page .textLayer .endOfContent { display: block; position: absolute; inset: 100% 0 0; z-index: 0; cursor: default; user-select: none; }
+    /* Form fields and links (pdfjs-dist/web/pdf_viewer.css .annotationLayer, trimmed). */
+    .zb-pdf-page .annotationLayer {
+      position: absolute; top: 0; left: 0; pointer-events: none; transform-origin: 0 0; z-index: 1;
+      color-scheme: only light;
+      --zb-field-background: rgb(0 121 121 / 0.1);
+    }
+    .zb-pdf-page .annotationLayer section {
+      position: absolute; text-align: initial; pointer-events: auto; box-sizing: border-box; transform-origin: 0 0; user-select: none;
+    }
+    .zb-pdf-page .annotationLayer .hasOwnCanvas:not(.sandboxModified) :is(input, textarea) { display: none; }
+    .zb-pdf-page .textLayer.selecting ~ .annotationLayer section { pointer-events: none; }
+    .zb-pdf-page .annotationLayer :is(.linkAnnotation, .buttonWidgetAnnotation.pushButton) > a {
+      position: absolute; font-size: 1em; top: 0; left: 0; width: 100%; height: 100%;
+    }
+    .zb-pdf-page .annotationLayer :is(.linkAnnotation, .buttonWidgetAnnotation.pushButton) > a:hover { background-color: rgb(255 255 0 / 0.2); }
+    .zb-pdf-page .annotationLayer .textWidgetAnnotation :is(input, textarea),
+    .zb-pdf-page .annotationLayer .choiceWidgetAnnotation select,
+    .zb-pdf-page .annotationLayer .buttonWidgetAnnotation:is(.checkBox, .radioButton) input {
+      background: var(--zb-field-background); border: 2px solid transparent; box-sizing: border-box;
+      font: calc(9px * var(--total-scale-factor)) sans-serif; height: 100%; margin: 0; vertical-align: top; width: 100%; color: #000;
+    }
+    .zb-pdf-page .annotationLayer .textWidgetAnnotation textarea { resize: none; }
+    .zb-pdf-page .annotationLayer :is(.textWidgetAnnotation :is(input, textarea), .choiceWidgetAnnotation select)[disabled],
+    .zb-pdf-page .annotationLayer .buttonWidgetAnnotation:is(.checkBox, .radioButton) input[disabled] {
+      background: none; border: 2px solid transparent; cursor: not-allowed;
+    }
+    .zb-pdf-page .annotationLayer .textWidgetAnnotation :is(input, textarea):hover,
+    .zb-pdf-page .annotationLayer .choiceWidgetAnnotation select:hover,
+    .zb-pdf-page .annotationLayer .buttonWidgetAnnotation:is(.checkBox, .radioButton) input:hover {
+      border: 2px solid #007979; border-radius: 2px;
+    }
+    .zb-pdf-page .annotationLayer .textWidgetAnnotation :is(input, textarea):focus,
+    .zb-pdf-page .annotationLayer .choiceWidgetAnnotation select:focus,
+    .zb-pdf-page .annotationLayer .buttonWidgetAnnotation:is(.checkBox, .radioButton) input:focus {
+      background: none; border: 2px solid #007979; border-radius: 2px; outline: 2px solid rgb(0 121 121 / 0.3); outline-offset: 1px;
+    }
+    .zb-pdf-page .annotationLayer :is(input, textarea, select):required { outline: 1.5px solid #e11d48; }
+    .zb-pdf-page .annotationLayer .buttonWidgetAnnotation:is(.checkBox, .radioButton) input { appearance: none; cursor: pointer; }
+    .zb-pdf-page .annotationLayer .buttonWidgetAnnotation.radioButton input { border-radius: 50%; }
+    .zb-pdf-page .annotationLayer .buttonWidgetAnnotation.checkBox input:checked {
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 8.5l3.2 3L13 4.5' fill='none' stroke='%230f172a' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 85% no-repeat, var(--zb-field-background);
+    }
+    .zb-pdf-page .annotationLayer .buttonWidgetAnnotation.radioButton input:checked {
+      background: radial-gradient(circle, #0f172a 0 32%, transparent 36%), var(--zb-field-background);
+    }
+    .zb-pdf-page .annotationLayer .buttonWidgetAnnotation:is(.checkBox, .radioButton) [data-canvas-name="checked"] { display: none; }
+    .zb-pdf-page .annotationLayer .buttonWidgetAnnotation:is(.checkBox, .radioButton) [data-canvas-name="checked"]:has(~ input:checked) { display: block; }
+    .zb-pdf-page .annotationLayer .buttonWidgetAnnotation:is(.checkBox, .radioButton) [data-canvas-name="unchecked"]:has(~ input:checked) { display: none; }
+    .zb-pdf-page .annotationLayer .buttonWidgetAnnotation:is(.checkBox, .radioButton):has([data-canvas-name="checked"]) input:checked,
+    .zb-pdf-page .annotationLayer .buttonWidgetAnnotation:is(.checkBox, .radioButton):has([data-canvas-name="unchecked"]) input:not(:checked) { background: none; }
+    .zb-pdf-page .annotationLayer .textWidgetAnnotation input.comb {
+      --comb-width: 0px; --comb-letter-spacing: calc(var(--comb-width) - 1ch);
+      font-family: monospace; letter-spacing: var(--comb-letter-spacing); overflow-x: hidden; padding: 0;
+      text-indent: calc(var(--comb-offset, 0) * var(--comb-width) + var(--comb-letter-spacing) / 2);
+    }
+    .zb-pdf-page .annotationLayer .annotationContent { position: absolute; width: 100%; height: 100%; pointer-events: none; }
+    .zb-pdf-page .annotationLayer section:has(div.annotationContent) canvas.annotationContent { display: none; }
+    .zb-pdf-page .annotationLayer .overlaidText { position: absolute; top: 0; left: 0; width: 0; height: 0; display: inline-block; overflow: hidden; }
   `,
 })
 export class PdfViewComponent {
@@ -107,6 +171,10 @@ export class PdfViewComponent {
   readonly textLayerReady = output<{ element: HTMLElement; blockIndex: number }>();
   /** A page's text layer was removed (zoom or resize): stop drawing in it. */
   readonly textLayerRemoved = output<HTMLElement>();
+  /** The PDF has form fields that can be filled in (emitted once it is open). */
+  readonly formDetected = output<boolean>();
+  /** A form field was changed. */
+  readonly formChanged = output<void>();
 
   protected readonly status = signal<'loading' | 'ready' | 'error'>('loading');
 
@@ -124,6 +192,11 @@ export class PdfViewComponent {
   private currentPage = 1;
   private scrollFrame = 0;
   private destroyed = false;
+  private readonly linkService: ReaderLinkService = createLinkService(() => this.pdf, {
+    goTo: (page) => this.goToPage(page),
+    current: () => this.currentPage,
+    count: () => this.slots.length,
+  });
 
   constructor() {
     const destroyRef = inject(DestroyRef);
@@ -190,6 +263,12 @@ export class PdfViewComponent {
       });
       this.pdf = await this.loadingTask.promise;
       if (this.destroyed) return;
+      // pdf.js calls this when a form field changes after the last save.
+      (this.pdf.annotationStorage as unknown as { onSetModified: (() => void) | null }).onSetModified = () => this.formChanged.emit();
+      const pdf = this.pdf;
+      void hasFillableFields(pdf).then((hasForm) => {
+        if (!this.destroyed && this.pdf === pdf) this.formDetected.emit(hasForm);
+      });
       const first = await this.pdf.getPage(1);
       const viewport = first.getViewport({ scale: 1 });
       this.pageSize = { width: viewport.width, height: viewport.height };
@@ -290,10 +369,14 @@ export class PdfViewComponent {
     slot.element.style.setProperty('--scale-factor', String(scale));
     slot.element.style.setProperty('--total-scale-factor', String(scale));
 
+    // Form fields are left off the canvas: the form layer shows them as inputs.
+    const annotationCanvasMap = new Map<string, HTMLCanvasElement>();
     const task = page.render({
       canvas,
       viewport,
       transform: ratio !== 1 ? [ratio, 0, 0, ratio, 0, 0] : undefined,
+      annotationMode: this.pdfjs.AnnotationMode.ENABLE_FORMS,
+      annotationCanvasMap,
     });
     slot.task = task;
     try {
@@ -320,13 +403,40 @@ export class PdfViewComponent {
     } catch {
       // Text selection is extra; the page is already drawn.
     }
+
+    // Form fields and links, above the text layer.
+    if (!textLayer.isConnected || !this.pdf) return;
+    try {
+      await renderFormLayer({
+        pdfjs: this.pdfjs,
+        pdf: this.pdf,
+        page,
+        viewport,
+        container: slot.element,
+        linkService: this.linkService,
+        annotationCanvasMap,
+        // The page was redrawn meanwhile (zoom or resize): don't add a second layer.
+        isCurrent: () => textLayer.isConnected,
+      });
+    } catch {
+      // The page still reads without its fields.
+    }
   }
 
   private removeLayers(slot: PageSlot): void {
-    slot.element.querySelectorAll<HTMLElement>('canvas, .textLayer').forEach((node) => {
+    slot.element.querySelectorAll<HTMLElement>(':scope > canvas, .textLayer, .annotationLayer').forEach((node) => {
       if (node.classList.contains('textLayer')) this.textLayerRemoved.emit(node);
       node.remove();
     });
+  }
+
+  /** The PDF with what the person typed in its form fields. */
+  async filledBytes(): Promise<Uint8Array> {
+    if (!this.pdf) throw new Error('The PDF is not open.');
+    // Fields keep their values in annotationStorage; leave the field being typed in so it is stored.
+    const active = document.activeElement;
+    if (active instanceof HTMLElement && active.closest('.annotationLayer')) active.blur();
+    return this.pdf.saveDocument();
   }
 
   /** Number of pages (0 until the PDF is open). */

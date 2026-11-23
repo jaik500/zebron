@@ -13,6 +13,7 @@ import { AboutComponent } from './features/about/pages/about/about.component';
 import { testCenterOrganizationGuard } from './core/guards/test-center-organization.guard';
 import { leaveCourseBuilderGuard } from './features/courses/builder/leave-course-builder.guard';
 import { leaveDashboardsGuard } from './features/dashboards/leave-dashboards.guard';
+import { leaveDocumentReaderGuard } from './features/documents/leave-document-reader.guard';
 import { legacyJobSearch } from './features/jobs/job-search-params';
 import { jobResolver } from './features/jobs/resolvers/job.resolver';
 export const routes: Routes = [
@@ -129,6 +130,7 @@ export const routes: Routes = [
             {
                 path: 'documents/:documentId',
                 canActivate: [authGuard],
+                canDeactivate: [leaveDocumentReaderGuard],
                 data: { title: 'Zebron | Reading' },
                 loadComponent: () => import('./features/documents/document-reader.component').then((m) => m.DocumentReaderComponent),
             },

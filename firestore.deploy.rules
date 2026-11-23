@@ -3341,7 +3341,8 @@ allow create: if isCurrentUser(userId)
 allow update: if isCurrentUser(userId)
 && validDocument(request.resource.data)
 && request.resource.data.diff(resource.data).affectedKeys()
-.hasOnly(["title", "position", "progress", "updatedAt", "openedAt"]);
+.hasOnly(["title", "position", "progress", "updatedAt", "openedAt", "size"])
+&& (request.resource.data.size == resource.data.size || resource.data.format == "pdf");
 }
 match /users/{userId}/documentAnnotations/{annotationId} {
 function validDocumentAnnotation(data) {

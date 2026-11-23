@@ -15,6 +15,7 @@ import {
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
+import { HotToastService } from '@ngxpert/hot-toast';
 
 import { I18nService } from '../../core/i18n/i18n.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
@@ -36,6 +37,7 @@ import { EpubBook, EpubError, EpubTocEntry, openEpub } from './epub-book';
 import { OfflineDocumentsService } from './offline-documents.service';
 import { BackNavigationService, useBackButton } from '../../core/services/back-navigation.service';
 import { PdfViewComponent } from './pdf-view.component';
+import { filledFileName } from './pdf-forms';
 import { sanitizeReaderHtml } from './reader-html';
 import { SentenceRange, blockBreaks, rangeFor, speechLanguage, splitSentences } from './reader-speech';
 
@@ -117,7 +119,7 @@ interface ReadingRun {
       <!-- Toolbar -->
       <div class="sticky top-16 z-20 border-b border-black/10 backdrop-blur" [style.background]="theme().background + 'ee'">
         <div class="mx-auto flex max-w-6xl items-center gap-0.5 px-2 py-1.5 sm:gap-2 sm:px-4">
-          <button type="button" class="zb-reader-tool" [attr.aria-label]="'Back' | t" [title]="'Back' | t" (click)="backNavigation.back()">
+          <button type="button" class="zb-reader-tool" [attr.aria-label]="'Back' | t" [title]="'Back' | t" (click)="goBack()">
             <mat-icon aria-hidden="true">arrow_back</mat-icon>
           </button>
           <div class="min-w-0 flex-1">
@@ -208,6 +210,28 @@ interface ReadingRun {
             </button>
           }
         </div>
+        @if (hasForm() && state() === 'ready' && document(); as current) {
+          <!-- Fillable PDF form: save the answers -->
+          <div class="mx-auto flex max-w-6xl flex-wrap items-center gap-x-2 gap-y-1.5 border-t border-black/10 px-3 py-1.5 text-sm sm:px-4" role="region" [attr.aria-label]="'PDF form' | t">
+            <mat-icon class="!h-5 !w-5 shrink-0 !text-[20px] text-[#007979]" aria-hidden="true">edit_note</mat-icon>
+            <span class="min-w-0 flex-1 basis-48" aria-live="polite">
+              @switch (formState()) {
+                @case ('unsaved') { <strong>{{ 'Your answers are not saved yet.' | t }}</strong> }
+                @case ('saved') { {{ 'Your answers are saved.' | t }} }
+                @default { {{ 'This PDF has a form. Click a field to fill it in.' | t }} }
+              }
+            </span>
+            <button type="button" class="zb-form-button zb-form-button--primary" [disabled]="savingForm() || !offline.online()" (click)="saveForm(current)" [title]="(offline.online() ? 'Save your answers in this document' : 'Saving needs a connection') | t">
+              <mat-icon aria-hidden="true">save</mat-icon>{{ (savingForm() ? 'Saving...' : 'Save') | t }}
+            </button>
+            <button type="button" class="zb-form-button" [disabled]="savingForm() || !offline.online()" (click)="saveFormCopy(current)" [title]="'Keep the blank form and save your answers as a new document' | t">
+              <mat-icon aria-hidden="true">file_copy</mat-icon>{{ 'Save as a copy' | t }}
+            </button>
+            <button type="button" class="zb-form-button" [disabled]="savingForm()" (click)="downloadFilled(current)" [title]="'Download the PDF with your answers' | t">
+              <mat-icon aria-hidden="true">download</mat-icon><span class="max-sm:sr-only">{{ 'Download filled PDF' | t }}</span>
+            </button>
+          </div>
+        }
       </div>
 
       @if (state() === 'loading') {
@@ -301,6 +325,8 @@ interface ReadingRun {
                 (pageChange)="onPdfPage($event)"
                 (textLayerReady)="painter.register($event.element, $event.blockIndex)"
                 (textLayerRemoved)="painter.unregister($event)"
+                (formDetected)="hasForm.set($event)"
+                (formChanged)="formState.set('unsaved')"
               />
             } @else if (current.format === 'txt') {
               <pre
@@ -386,6 +412,16 @@ interface ReadingRun {
     .zb-reader-tool:hover:not(:disabled) { background: rgb(0 0 0 / 0.05); }
     .zb-reader-tool:disabled { opacity: 0.35; }
     .zb-reader-tool:focus-visible, .zb-reader-step:focus-visible { outline: 2px solid #007979; outline-offset: 2px; }
+    .zb-form-button {
+      display: inline-flex; height: 2.25rem; align-items: center; gap: 0.25rem; border-radius: 0.5rem; padding: 0 0.75rem;
+      border: 1px solid rgb(0 121 121 / 0.6); color: inherit; font-weight: 600; font-size: 0.875rem;
+    }
+    .zb-form-button .mat-icon { height: 18px; width: 18px; font-size: 18px; }
+    .zb-form-button:hover:not(:disabled) { background: rgb(0 121 121 / 0.08); }
+    .zb-form-button:disabled { opacity: 0.45; cursor: not-allowed; }
+    .zb-form-button:focus-visible { outline: 2px solid #007979; outline-offset: 2px; }
+    .zb-form-button--primary { background: #007979; border-color: #007979; color: #fff; }
+    .zb-form-button--primary:hover:not(:disabled) { background: #006666; }
     .zb-reader-play { height: 2.75rem; width: 2.75rem; border-radius: 9999px; background: #007979; color: #fff; }
     .zb-reader-play:hover:not(:disabled) { background: #006666; }
     .zb-reader-step {
@@ -432,6 +468,134 @@ export class DocumentReaderComponent {
   protected readonly offline = inject(OfflineDocumentsService);
   private readonly dialog = inject(MatDialog);
   protected readonly backNavigation = inject(BackNavigationService);
+  private readonly toast = inject(HotToastService);
+  private readonly toastOptions = { dismissible: true, closeLabel: this.i18n.t('Close') };
+
+  // ------------------------------------------------------------------
+  // Fillable PDF forms
+  // ------------------------------------------------------------------
+
+  /** The open PDF has form fields. */
+  protected readonly hasForm = signal(false);
+  /** clean: nothing typed yet; unsaved: answers not saved; saved: answers saved. */
+  protected readonly formState = signal<'clean' | 'unsaved' | 'saved'>('clean');
+  protected readonly savingForm = signal(false);
+  /** The person agreed to save over this document's file (asked once). */
+  private replaceConfirmed = false;
+
+  /** Router guard (leave-document-reader.guard.ts): ask before losing typed answers. */
+  canLeave(): boolean {
+    return this.formState() !== 'unsaved' || confirm(this.i18n.t('Leave without saving your answers in this form?'));
+  }
+
+  protected goBack(): void {
+    // The route guard asks about unsaved answers.
+    this.backNavigation.back();
+  }
+
+  private readonly onBeforeUnload = (event: BeforeUnloadEvent): void => {
+    if (this.formState() === 'unsaved') {
+      event.preventDefault();
+      event.returnValue = '';
+    }
+  };
+
+  private async filledBytes(): Promise<Uint8Array | null> {
+    try {
+      return (await this.pdfView()?.filledBytes()) ?? null;
+    } catch (error) {
+      this.logger.error('DocumentReader', 'Could not fill in the PDF.', error);
+      this.toast.error(this.i18n.t('The answers could not be added to the PDF.'), this.toastOptions);
+      return null;
+    }
+  }
+
+  /** Save the answers into this document's file. */
+  protected async saveForm(current: UserDocument): Promise<void> {
+    if (this.savingForm()) return;
+    if (
+      !this.replaceConfirmed &&
+      !confirm(this.i18n.t('Save your answers in "{0}"? The file in My documents is replaced by the filled-in form. To keep the blank form, use Save as a copy.', [current.title]))
+    ) {
+      return;
+    }
+    this.replaceConfirmed = true;
+    this.savingForm.set(true);
+    try {
+      const bytes = await this.filledBytes();
+      if (!bytes) return;
+      const updated = await this.documents.replacePdf(current, bytes);
+      this.document.set(updated);
+      this.formState.set('saved');
+      // A copy kept on this device gets the filled-in file too.
+      const uid = this.auth.firebaseUser()?.uid;
+      if (uid && this.offline.isKept(current.id)) {
+        const copy = new Uint8Array(bytes.byteLength);
+        copy.set(bytes);
+        await this.offline.keep(uid, updated, copy.buffer, [...(this.annotationStore.annotations() as readonly DocumentAnnotation[])]);
+      }
+      this.toast.success(this.i18n.t('Your answers are saved.'), this.toastOptions);
+    } catch (error) {
+      this.logger.error('DocumentReader', 'Could not save the filled-in form.', error);
+      this.formState.set('unsaved');
+      this.toast.error(this.i18n.t('Your answers could not be saved. Check your connection and try again.'), this.toastOptions);
+    } finally {
+      this.savingForm.set(false);
+    }
+  }
+
+  /** Save the answers as a new document, keeping the blank form. */
+  protected async saveFormCopy(current: UserDocument): Promise<void> {
+    if (this.savingForm()) return;
+    this.savingForm.set(true);
+    try {
+      const bytes = await this.filledBytes();
+      if (!bytes) return;
+      const outcome = await this.documents.savePdfCopy(current, bytes);
+      if (outcome.ok) {
+        this.formState.set('saved');
+        this.toast.success(this.i18n.t('Saved as "{0}" in My documents.', [outcome.document.title]), this.toastOptions);
+      } else {
+        this.formState.set('unsaved');
+        const messages: Record<string, string> = {
+          'too-many': 'You have the most documents allowed. Delete one to save a copy.',
+          quota: 'Your documents are using all your space. Delete one to save a copy.',
+          'too-large': 'The filled-in PDF is too large to save.',
+        };
+        this.toast.error(this.i18n.t(messages[outcome.reason] ?? 'Your answers could not be saved. Check your connection and try again.'), this.toastOptions);
+      }
+    } catch (error) {
+      this.logger.error('DocumentReader', 'Could not save a filled-in copy.', error);
+      this.formState.set('unsaved');
+      this.toast.error(this.i18n.t('Your answers could not be saved. Check your connection and try again.'), this.toastOptions);
+    } finally {
+      this.savingForm.set(false);
+    }
+  }
+
+  /** Download the PDF with the answers (works offline too). It doesn't count as saving. */
+  protected async downloadFilled(current: UserDocument): Promise<void> {
+    const before = this.formState();
+    this.savingForm.set(true);
+    try {
+      const bytes = await this.filledBytes();
+      if (!bytes) return;
+      const copy = new Uint8Array(bytes.byteLength);
+      copy.set(bytes);
+      const url = URL.createObjectURL(new Blob([copy.buffer], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filledFileName(current.fileName);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } finally {
+      // pdf.js marks the form as saved after writing it; the answers still aren't saved in Zebron.
+      this.formState.set(before);
+      this.savingForm.set(false);
+    }
+  }
 
   protected readonly document = signal<UserDocument | null>(null);
   protected readonly state = signal<'loading' | 'ready' | 'missing' | 'error'>('loading');
@@ -503,11 +667,13 @@ export class DocumentReaderComponent {
       this.settings.set(loadSettings());
       this.speechSupported.set('speechSynthesis' in window && typeof SpeechSynthesisUtterance !== 'undefined');
       window.addEventListener('scroll', this.onScroll, { passive: true });
+      window.addEventListener('beforeunload', this.onBeforeUnload);
       document.addEventListener('visibilitychange', this.onVisibility);
       void this.open(this.route.snapshot.paramMap.get('documentId') ?? '');
     });
     destroyRef.onDestroy(() => {
       window.removeEventListener('scroll', this.onScroll);
+      window.removeEventListener('beforeunload', this.onBeforeUnload);
       document.removeEventListener('visibilitychange', this.onVisibility);
       cancelAnimationFrame(this.scrollFrame);
       this.stopReading();

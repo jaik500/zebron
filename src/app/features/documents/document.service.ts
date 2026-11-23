@@ -13,7 +13,7 @@ import {
   setDoc,
   updateDoc,
 } from 'firebase/firestore';
-import { deleteObject, getBytes, getDownloadURL, ref, uploadBytesResumable } from 'firebase/storage';
+import { deleteObject, getBytes, getDownloadURL, ref, uploadBytes, uploadBytesResumable } from 'firebase/storage';
 
 import { firebaseStorage, firestore } from '../../core/services/firebase-config';
 import { AuthService } from '../../core/services/auth.service';
@@ -21,6 +21,7 @@ import { LoggerService } from '../../core/services/logger.service';
 import { deleteDocumentAnnotations } from './document-annotation.store';
 import { OfflineDocumentsService } from './offline-documents.service';
 import { DocumentFormat, MAX_FILE_BYTES, UploadCheck, checkUpload, clampProgress } from './document-formats';
+import { filledFileName } from './pdf-forms';
 
 /**
  * My documents: a person's own files, read in Zebron (/courses/documents).
@@ -126,9 +127,10 @@ export class DocumentService {
    * Upload a file, then save its details. If saving the details fails, the
    * uploaded file is removed again so nothing is left behind.
    */
-  async upload(file: File, onProgress?: (percent: number) => void): Promise<UploadOutcome> {
+  async upload(file: File, onProgress?: (percent: number) => void, title?: string): Promise<UploadOutcome> {
     const checked = this.check(file);
     if (!checked.ok) return checked;
+    if (title?.trim()) checked.title = title.replace(/\s+/g, ' ').trim().slice(0, 200);
     const uid = this.uid();
     const reference = doc(collection(firestore, 'users', uid, 'documents'));
     const storagePath = `users/${uid}/documents/${reference.id}/${checked.fileName}`;
@@ -213,6 +215,34 @@ export class DocumentService {
     );
     await deleteDoc(doc(firestore, 'users', uid, 'documents', document.id));
     this.items.update((items) => items.filter((item) => item.id !== document.id));
+  }
+
+  /**
+   * Save a filled-in PDF form over the document's file (the same name and
+   * place), and update its size. Highlights and the reading place stay.
+   */
+  async replacePdf(document: UserDocument, bytes: Uint8Array): Promise<UserDocument> {
+    if (document.format !== 'pdf') throw new Error('Only PDF forms can be saved.');
+    if (!bytes.byteLength || bytes.byteLength > MAX_FILE_BYTES) throw new Error('The filled-in PDF is too large to save.');
+    const uid = this.uid();
+    await uploadBytes(ref(firebaseStorage, document.storagePath), bytes, {
+      contentType: 'application/pdf',
+      contentDisposition: `inline; filename="${document.fileName}"`,
+    });
+    await updateDoc(doc(firestore, 'users', uid, 'documents', document.id), { size: bytes.byteLength, updatedAt: serverTimestamp() });
+    const updated: UserDocument = { ...document, size: bytes.byteLength, contentType: 'application/pdf', updatedAt: new Date() };
+    this.items.update((items) => items.map((item) => (item.id === document.id ? updated : item)));
+    return updated;
+  }
+
+  /** Save a filled-in PDF form as a new document, "Name (filled).pdf", keeping the original. */
+  async savePdfCopy(document: UserDocument, bytes: Uint8Array): Promise<UploadOutcome> {
+    // The limits on the number of files and space are checked against the full list.
+    if (!this.loaded()) await this.load().catch(() => undefined);
+    const copy = new Uint8Array(bytes.byteLength);
+    copy.set(bytes);
+    const file = new File([copy.buffer], filledFileName(document.fileName), { type: 'application/pdf' });
+    return this.upload(file, undefined, `${document.title} (filled)`);
   }
 
   /** The file's bytes, for the reader. Needs CORS on the Storage bucket (storage.cors.json). */

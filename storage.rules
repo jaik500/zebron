@@ -224,7 +224,8 @@ service firebase.storage {
     // ------------------------------------------------------------
     // A person's own files for the reader (/courses/documents). Private:
     // only the owner opens, uploads or deletes them. Up to 50 MB; PDF,
-    // EPUB, Word, plain text or markdown (the app sets the type).
+    // EPUB, Word, plain text or markdown (the app sets the type). A PDF
+    // can be saved over itself when its form is filled in.
     match /users/{userId}/documents/{documentId}/{fileName} {
       allow read, delete: if signedIn() && request.auth.uid == userId;
       allow create: if signedIn()
@@ -232,7 +233,13 @@ service firebase.storage {
         && request.resource.size > 0
         && request.resource.size <= 50 * 1024 * 1024
         && request.resource.contentType.matches('application/pdf|application/epub[+]zip|application/vnd[.]openxmlformats-officedocument[.]wordprocessingml[.]document|text/plain|text/markdown');
-      allow update: if false;
+      // A PDF saved again with its form filled in (the reader's Save): PDFs only.
+      allow update: if signedIn()
+        && request.auth.uid == userId
+        && resource.contentType == 'application/pdf'
+        && request.resource.contentType == 'application/pdf'
+        && request.resource.size > 0
+        && request.resource.size <= 50 * 1024 * 1024;
     }
 
     // ------------------------------------------------------------

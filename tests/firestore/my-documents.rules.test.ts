@@ -14,7 +14,8 @@ import fs from 'node:fs';
 /**
  * My documents (users/{uid}/documents, firestore.rules): details of a
  * person's own files for the reader. Private to the owner; fields checked;
- * only the title and the reading position change after upload.
+ * only the title, the reading position and (for a PDF saved with its form
+ * filled in) the size change after upload.
  */
 describe('Zebron Firestore Security Rules - my documents', () => {
   let testEnv: RulesTestEnvironment;
@@ -143,9 +144,8 @@ describe('Zebron Firestore Security Rules - my documents', () => {
     );
   });
 
-  it('refuses changing the file, format or size after upload', async () => {
+  it('refuses changing the file or format after upload', async () => {
     await seed();
-    await assertFails(updateDoc(doc(ownerDb(), PATH), { size: 10, updatedAt: serverTimestamp() }));
     await assertFails(updateDoc(doc(ownerDb(), PATH), { format: 'epub', updatedAt: serverTimestamp() }));
     await assertFails(
       updateDoc(doc(ownerDb(), PATH), {
@@ -156,7 +156,23 @@ describe('Zebron Firestore Security Rules - my documents', () => {
     );
   });
 
-  it('refuses another person updating the position', async () => {
+  it('lets the owner save the new size of a PDF saved with its form filled in, but not of other formats', async () => {
+    await seed();
+    await assertSucceeds(updateDoc(doc(ownerDb(), PATH), { size: 2_450_000, updatedAt: serverTimestamp() }));
+    await assertFails(updateDoc(doc(ownerDb(), PATH), { size: 52_428_801, updatedAt: serverTimestamp() }));
+    await assertFails(updateDoc(doc(otherDb(), PATH), { size: 10, updatedAt: serverTimestamp() }));
+
+    const EPUB_PATH = `users/${OWNER_UID}/documents/doc-2`;
+    await assertSucceeds(
+      setDoc(
+        doc(ownerDb(), EPUB_PATH),
+        documentData({ format: 'epub', fileName: 'book.epub', contentType: 'application/epub+zip', storagePath: `users/${OWNER_UID}/documents/doc-2/book.epub` }),
+      ),
+    );
+    await assertFails(updateDoc(doc(ownerDb(), EPUB_PATH), { size: 10, updatedAt: serverTimestamp() }));
+  });
+
+    it('refuses another person updating the position', async () => {
     await seed();
     await assertFails(updateDoc(doc(otherDb(), PATH), { progress: 50, updatedAt: serverTimestamp() }));
   });
