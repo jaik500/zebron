@@ -3018,6 +3018,10 @@ match /platformEmailUsage/{period} {
 allow get, list: if isPlatformAdmin();
 allow write: if false;
 }
+match /platformBackups/{backupId} {
+allow get, list: if isPlatformAdmin();
+allow write: if false;
+}
 match /organizations/{organizationId}/sentMessages/{messageId} {
 allow get, list: if isPlatformAdmin()
 || (

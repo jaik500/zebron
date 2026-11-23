@@ -2727,3 +2727,9 @@ export {
 export {
   verifyUsajobsCredentials,
 } from './job-aggregation/verify-usajobs';
+export {
+  refreshPlatformBackup,
+  runPlatformBackup,
+  scheduledPlatformBackup,
+  startPlatformBackup,
+} from "./platform-backups";

@@ -1732,6 +1732,17 @@ export const routes: Routes = [
     { path: 'admin/configuration/knowledge/:id/edit', redirectTo: '/admin/knowledge/:id/edit', pathMatch: 'full' },
     { path: 'admin/configuration/knowledge/:id', redirectTo: '/admin/knowledge/:id', pathMatch: 'full' },
     // -----------------------------------------------------
+    // ADMIN BACKUPS
+    // -----------------------------------------------------
+    {
+        path: 'admin/backups',
+        canActivate: [adminGuard],
+        data: {
+            title: 'Admin | Backups',
+        },
+        loadComponent: () => import('./features/admin/pages/backups/platform-backups.component').then((m) => m.PlatformBackupsComponent),
+    },
+    // -----------------------------------------------------
     // ADMIN HELP ASSISTANT SETTINGS
     // -----------------------------------------------------
     {

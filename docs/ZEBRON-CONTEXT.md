@@ -4,7 +4,7 @@ Give this file to an AI assistant (or a new developer) at the start of any
 work on Zebron. It explains what Zebron is, how it is built, where things
 live, the rules every change follows, and how we work together.
 
-- **Last updated:** 22 November 2026 (guide edition 137)
+- **Last updated:** 23 November 2026 (guide edition 138)
 - **Also in the Knowledge Center** as "Zebron platform overview for the team" (support and developers), and introduced on the Internal Blog in "How Zebron works: one page for the whole team" (`scripts/seed-blog-zebron-context.mjs`).
 - **Keep it current:** when a change makes anything here wrong (a new
   application, folder, collection, function, rule or way of working), update
@@ -177,7 +177,8 @@ security.
 - Platform: `systemSettings` (public read, platform-admin write),
   `featureConfigurations`, `siteReviews` (home page reviews), `categories`, `locations`, `resources`,
   `resourceTypes`, `jobs`, `bootcamps`, `taxPayConfigurations`,
-  `userClaims/{uid}`, `aiUsage`, `aiUsageDaily`
+  `userClaims/{uid}`, `aiUsage`, `aiUsageDaily`, `platformBackups` (Admin → Backups;
+  files in Storage under `platform-backups/`)
 
 Server-only collections (no browser access): supportTickets, counters,
 organizationServiceRequests, contractTerms, organizations/{id}/contract,
@@ -221,6 +222,9 @@ role on the server (`requirePlatformAdministrator` and similar helpers).
   email outbox processing, publishScheduledBlogPosts,
   processBusinessComplianceStatuses
 - **Payments:** createDonationCheckout (Stripe)
+- **Backups:** startPlatformBackup, refreshPlatformBackup (platform admins),
+  runPlatformBackup (trigger on platformBackups), scheduledPlatformBackup
+  (Mondays 03:15 ET; keeps the newest 8). See `functions/src/platform-backups.ts`
 
 Secrets (Secret Manager, `firebase functions:secrets:set NAME`):
 `RESEND_API_KEY`, `RESEND_WEBHOOK_SECRET`, `GEMINI_API_KEY`,

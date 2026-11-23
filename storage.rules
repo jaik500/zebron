@@ -18,6 +18,7 @@ rules_version = '2';
 //   organizations/{organizationId}/trainingGroups/{groupId}/assignments/{assignmentId}/submissions/{userId}/{file}
 //                                                       files a learner hands in
 //   organizations/{organizationId}/branding/{file}      the organization's dashboard logo
+//   platform-backups/{backupId}/...                     platform backups (Admin → Backups; functions write, platform admins read)
 //   users/{userId}/avatar/{file}                        a person's profile photo
 //   users/{userId}/documents/{documentId}/{file}        a person's own documents (My documents reader)
 service firebase.storage {
@@ -344,6 +345,16 @@ service firebase.storage {
 
       // Removing a file before handing in (once handed in, the Cloud Function manages it).
       allow delete: if signedIn() && request.auth.uid == userId;
+    }
+
+    // ------------------------------------------------------------
+    // PLATFORM BACKUPS (Admin → Backups)
+    // ------------------------------------------------------------
+    // Written only by Cloud Functions. Platform administrators can
+    // download them.
+    match /platform-backups/{allPaths=**} {
+      allow read: if isPlatformAdmin();
+      allow write: if false;
     }
 
     // Everything else is closed.

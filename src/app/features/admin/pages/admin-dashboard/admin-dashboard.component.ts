@@ -1278,6 +1278,13 @@ export class AdminDashboardComponent {
       icon: 'shield_person',
     },
     {
+      title: 'Backups',
+      description: 'Back up every record, sign-in account and file list, download the files, and set up Google Cloud backups.',
+      route: '/admin/backups',
+      actionLabel: 'Open Backups',
+      icon: 'backup',
+    },
+    {
       title: 'Help Assistant',
       description: 'Switch the Ask for help chat on or off, choose the AI model and limits, edit its welcome text and sources, and try it.',
       route: '/admin/configuration/help-assistant',

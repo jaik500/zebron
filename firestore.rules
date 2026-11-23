@@ -4162,6 +4162,12 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Platform backups (Admin → Backups); written only by Cloud Functions.
+    match /platformBackups/{backupId} {
+      allow get, list: if isPlatformAdmin();
+      allow write: if false;
+    }
+
     // ============================================================
     // ORGANIZATION SENT MESSAGES (mailbox)
     // ============================================================
