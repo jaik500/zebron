@@ -2733,3 +2733,8 @@ export {
   scheduledPlatformBackup,
   startPlatformBackup,
 } from "./platform-backups";
+
+export {
+  closeResourceReport,
+  reportResourceProblem,
+} from "./resource-reports";

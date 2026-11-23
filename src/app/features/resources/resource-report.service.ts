@@ -1,19 +1,10 @@
 import { DestroyRef, Injectable, PLATFORM_ID, computed, inject, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 
-import {
-  Timestamp,
-  addDoc,
-  collection,
-  doc,
-  onSnapshot,
-  query,
-  serverTimestamp,
-  updateDoc,
-  where,
-} from 'firebase/firestore';
+import { Timestamp, collection, onSnapshot, query, where } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
 
-import { firebaseAuth, firestore } from '../../core/services/firebase-config';
+import { firebaseFunctions, firestore } from '../../core/services/firebase-config';
 
 /**
  * "Report a problem" on a resource page (resourceReports collection).
@@ -21,7 +12,9 @@ import { firebaseAuth, firestore } from '../../core/services/firebase-config';
  * Anyone can send a report, signed in or not; it starts "open". Only
  * platform administrators read reports and mark them resolved or
  * dismissed (Admin → Resources → Reported problems, and the panel in
- * the resource form). See firestore.rules → resourceReports.
+ * the resource form). Reports are written by the reportResourceProblem
+ * and closeResourceReport functions (functions/src/resource-reports.ts);
+ * firestore.rules lets platform administrators read them.
  */
 
 export type ResourceReportReason = 'closed' | 'phone' | 'address' | 'hours' | 'link' | 'eligibility' | 'other';
@@ -75,25 +68,22 @@ export class ResourceReportService {
   private watchers = 0;
   private unsubscribe: (() => void) | null = null;
 
-  /** Sends a report from the public resource page. */
+  /**
+   * Sends a report from the public resource page. The function fills in
+   * the resource's name, the sender and the time, and allows at most 10
+   * reports per visitor per hour.
+   */
   async submit(input: {
     resourceId: string;
-    resourceName: string;
-    resourceSlug: string;
     reason: ResourceReportReason;
     details: string;
     contactEmail: string;
   }): Promise<void> {
-    await addDoc(collection(firestore, 'resourceReports'), {
+    await httpsCallable(firebaseFunctions, 'reportResourceProblem')({
       resourceId: input.resourceId,
-      resourceName: input.resourceName.slice(0, 200),
-      resourceSlug: input.resourceSlug.slice(0, 200),
       reason: input.reason,
       details: input.details.trim().slice(0, REPORT_DETAILS_MAX),
       contactEmail: input.contactEmail.trim().slice(0, 200),
-      reportedBy: firebaseAuth.currentUser?.uid ?? null,
-      status: 'open',
-      createdAt: serverTimestamp(),
     });
   }
 
@@ -129,11 +119,7 @@ export class ResourceReportService {
 
   /** Marks a report resolved (fixed) or dismissed (not a real problem). */
   async close(reportId: string, status: Exclude<ResourceReportStatus, 'open'>): Promise<void> {
-    await updateDoc(doc(firestore, 'resourceReports', reportId), {
-      status,
-      resolvedBy: firebaseAuth.currentUser?.uid ?? null,
-      resolvedAt: serverTimestamp(),
-    });
+    await httpsCallable(firebaseFunctions, 'closeResourceReport')({ reportId, status });
   }
 }
 

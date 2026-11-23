@@ -13,6 +13,9 @@
       "source": "functions",
       "codebase": "default",
       "disallowLegacyRuntimeConfig": true,
+      "predeploy": [
+        "npm --prefix functions run build"
+      ],
       "ignore": [
         "node_modules",
         ".git",

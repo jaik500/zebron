@@ -6,7 +6,15 @@
 
 **Firestore rules:** edit `firestore.rules` (never `firestore.deploy.rules`,
 which is generated), then run `npm run rules:build` and commit both files.
-Keep new rules short: the compact rules have a 200 KiB budget, checked by
+Keep new rules short. The binding limit is Firebase's **compiled** size,
+256,000 bytes, which is far smaller than the text limit: about 1.65 bytes
+compiled per byte of `firestore.deploy.rules`, so roughly 155 KB of compact
+text. Over it, deploys fail with "Total size of compiled executables must be
+smaller than 256000 bytes" (the CLI then shows a misleading 409 "Release
+... already exists"; run with `--debug` to see the real error). Each call to
+a helper such as `isPlatformAdmin()` is compiled in full, so prefer one
+`allow read` / `allow create, update` statement over several, and put
+complex validation in a Cloud Function. The text size is checked by
 `tests/unit/firestore-rules-build.test.ts`.
 
 **Read `docs/ZEBRON-CONTEXT.md` first.** It explains what Zebron is, the

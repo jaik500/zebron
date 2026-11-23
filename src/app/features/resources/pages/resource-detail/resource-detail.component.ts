@@ -271,7 +271,7 @@ const DAYS: { key: keyof Availability; label: string }[] = [
                   }
                 </p>
                 @if (reportState() === 'open' || reportState() === 'sending') {
-                  <form class="mt-3 space-y-2.5" (ngSubmit)="sendReport(item.id, item.name, item.slug)" aria-label="Report a problem with this listing">
+                  <form class="mt-3 space-y-2.5" (ngSubmit)="sendReport(item.id)" aria-label="Report a problem with this listing">
                     <label class="block">
                       <span class="block text-xs font-semibold text-gray-700">What is wrong?</span>
                       <select name="reportReason" [(ngModel)]="reportReason" required
@@ -667,7 +667,7 @@ export class ResourceDetailComponent {
   protected reportDetails = '';
   protected reportEmail = '';
 
-  protected async sendReport(resourceId: string, resourceName: string, resourceSlug: string): Promise<void> {
+  protected async sendReport(resourceId: string): Promise<void> {
     if (this.reportState() === 'sending') {
       return;
     }
@@ -675,17 +675,20 @@ export class ResourceDetailComponent {
     try {
       await this.reportService.submit({
         resourceId,
-        resourceName,
-        resourceSlug,
         reason: this.reportReason,
         details: this.reportDetails,
         contactEmail: this.reportEmail,
       });
       this.reportState.set('sent');
       this.reportDetails = '';
-    } catch {
+    } catch (error) {
       this.reportState.set('open');
-      this.toast.error('Your report could not be sent. Please try again, or use the Contact page.');
+      const code = (error as { code?: string })?.code ?? '';
+      this.toast.error(
+        code.endsWith('resource-exhausted') || code.endsWith('invalid-argument') || code.endsWith('not-found')
+          ? ((error as { message?: string }).message ?? 'Your report could not be sent.')
+          : 'Your report could not be sent. Please try again, or use the Contact page.',
+      );
     }
   }
 

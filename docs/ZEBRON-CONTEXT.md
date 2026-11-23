@@ -4,7 +4,7 @@ Give this file to an AI assistant (or a new developer) at the start of any
 work on Zebron. It explains what Zebron is, how it is built, where things
 live, the rules every change follows, and how we work together.
 
-- **Last updated:** 23 November 2026 (guide edition 141)
+- **Last updated:** 23 November 2026 (guide edition 143)
 - **Also in the Knowledge Center** as "Zebron platform overview for the team" (support and developers), and introduced on the Internal Blog in "How Zebron works: one page for the whole team" (`scripts/seed-blog-zebron-context.mjs`).
 - **Keep it current:** when a change makes anything here wrong (a new
   application, folder, collection, function, rule or way of working), update
@@ -176,8 +176,8 @@ security.
   `platformMailboxes`
 - Platform: `systemSettings` (public read, platform-admin write),
   `featureConfigurations`, `siteReviews` (home page reviews), `categories`, `locations`, `resources`,
-  `resourceTypes`, `resourceReports` (Report a problem; anyone creates, platform
-  admins read and close), `jobs`, `bootcamps`, `taxPayConfigurations`,
+  `resourceTypes`, `resourceReports` (Report a problem; written by functions, platform
+  admins read), `jobs`, `bootcamps`, `taxPayConfigurations`,
   `userClaims/{uid}`, `aiUsage`, `aiUsageDaily`, `platformBackups` (Admin → Backups;
   files in Storage under `platform-backups/`)
 
@@ -223,6 +223,9 @@ role on the server (`requirePlatformAdministrator` and similar helpers).
   email outbox processing, publishScheduledBlogPosts,
   processBusinessComplianceStatuses
 - **Payments:** createDonationCheckout (Stripe)
+- **Resources:** reportResourceProblem (anyone, 10 an hour per visitor),
+  closeResourceReport (platform admins); weeklyContentChecks,
+  runContentChecksNow (links, due for review, duplicates)
 - **Backups:** startPlatformBackup, refreshPlatformBackup (platform admins),
   runPlatformBackup (trigger on platformBackups), scheduledPlatformBackup
   (Mondays 03:15 ET; keeps the newest 8). See `functions/src/platform-backups.ts`
@@ -441,6 +444,7 @@ status badge. Still open:
 
 | Priority | Issue | Where |
 | --- | --- | --- |
+| High | Firestore rules are close to Firebase's compiled-size limit (256,000 bytes; on 23 November 2026 a deploy went 918 bytes over and the rules were trimmed back under it). New rules must be small or go through a function; see CLAUDE.md | firestore.rules |
 | High | Guests can make Zebron email any address (support ticket confirmation includes their text); no CAPTCHA or App Check | `createSupportTicket` in functions/src/support-tickets.ts |
 | Medium | Invitation acceptance doesn't require a verified email | organization-invitation-acceptance.ts |
 | Medium | Direct-message `participantInfo` (names and photos) isn't validated: people can pose as someone else | firestore.rules, communityConversations |
@@ -452,7 +456,6 @@ status badge. Still open:
 | Low | `auth.guard.ts` logs the user and profile to the console | core/guards/auth.guard.ts |
 | Low | CSP is report-only and allows inline scripts | src/server.ts |
 | Low | functions lint: TypeScript 6 with @typescript-eslint 5 and ESLint 8 | functions/package.json |
-| Low | No predeploy build for functions | firebase.json |
 | Low | `public/coding-lab/runner.html` is unused | public/coding-lab |
 | Low | NG8102 warnings in career-path-manage.component.ts | features/careers |
 

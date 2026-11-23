@@ -1273,7 +1273,7 @@ allow get, list: if isAuthenticated()
 && resource.data.get("status", "") == "published";
 allow get, list: if isOrganizationOperational(organizationId)
 && isOrganizationStaffOrAbove(organizationId);
-allow create: if (
+allow create, update: if (
 isPlatformAdmin()
 || (
 isOrganizationOperational(organizationId)
@@ -1281,16 +1281,6 @@ isOrganizationOperational(organizationId)
 )
 )
 && isValidKnowledgeArticle()
-&& request.resource.data.id == articleId;
-allow update: if (
-isPlatformAdmin()
-|| (
-isOrganizationOperational(organizationId)
-&& isOrganizationStaffOrAbove(organizationId)
-)
-)
-&& isValidKnowledgeArticle()
-&& request.resource.data.id == resource.data.id
 && request.resource.data.id == articleId;
 allow delete: if isPlatformAdmin()
 || (
@@ -1317,20 +1307,13 @@ allow update, delete: if false;
 match /knowledgeArticles/{articleId} {
 allow get, list: if resource.data.status == "published"
 && "all" in resource.data.audience;
-allow get: if isAuthenticated()
-&& resource.data.status == "published";
-allow get: if isPlatformAdmin();
-allow list: if isPlatformAdmin()
+allow get, list: if isPlatformAdmin()
 || (
 isAuthenticated()
 && resource.data.status == "published"
 );
-allow create: if isPlatformAdmin()
+allow create, update: if isPlatformAdmin()
 && isValidKnowledgeArticle()
-&& request.resource.data.id == articleId;
-allow update: if isPlatformAdmin()
-&& isValidKnowledgeArticle()
-&& request.resource.data.id == resource.data.id
 && request.resource.data.id == articleId;
 allow delete: if isPlatformAdmin();
 }
@@ -3019,7 +3002,7 @@ allow get, list: if isPlatformAdmin();
 allow write: if false;
 }
 match /platformBackups/{backupId} {
-allow get, list: if isPlatformAdmin();
+allow read: if isPlatformAdmin();
 allow write: if false;
 }
 match /organizations/{organizationId}/sentMessages/{messageId} {
@@ -3066,34 +3049,8 @@ return request.resource.data.name is string
 && request.resource.data.status in ["draft", "pending", "published", "archived"];
 }
 match /resourceReports/{reportId} {
-allow get, list: if isPlatformAdmin();
-allow create: if request.resource.data.keys().hasOnly([
-"resourceId", "resourceName", "resourceSlug", "reason",
-"details", "contactEmail", "reportedBy", "status", "createdAt"
-])
-&& request.resource.data.status == "open"
-&& request.resource.data.createdAt == request.time
-&& request.resource.data.resourceId is string
-&& request.resource.data.resourceId.size() > 0
-&& request.resource.data.resourceId.size() <= 100
-&& exists(/databases/$(database)/documents/resources/$(request.resource.data.resourceId))
-&& request.resource.data.resourceName is string
-&& request.resource.data.resourceName.size() <= 200
-&& request.resource.data.resourceSlug is string
-&& request.resource.data.resourceSlug.size() <= 200
-&& request.resource.data.reason in ["closed", "phone", "address", "hours", "link", "eligibility", "other"]
-&& request.resource.data.details is string
-&& request.resource.data.details.size() <= 1000
-&& request.resource.data.contactEmail is string
-&& request.resource.data.contactEmail.size() <= 200
-&& (
-(request.auth == null && request.resource.data.reportedBy == null)
-|| (request.auth != null && request.resource.data.reportedBy == request.auth.uid)
-);
-allow update: if isPlatformAdmin()
-&& request.resource.data.diff(resource.data).affectedKeys().hasOnly(["status", "resolvedBy", "resolvedAt"])
-&& request.resource.data.status in ["open", "resolved", "dismissed"];
-allow delete: if isPlatformAdmin();
+allow read: if isPlatformAdmin();
+allow write: if false;
 }
 match /categories/{categoryId} {
 allow get, list: if true;
@@ -3661,8 +3618,7 @@ return data.title is string
 && data.organizationId == organizationId
 && data.authorId is string
 && data.authorName is string
-&& data.pinned is bool
-&& (!data.keys().hasAny(["related"]) || (data.related is list && data.related.size() <= 8));
+&& data.pinned is bool;
 }
 function isValidBlogComment() {
 let data = request.resource.data;

@@ -1837,7 +1837,10 @@ service cloud.firestore {
       allow get, list: if isOrganizationOperational(organizationId)
         && isOrganizationStaffOrAbove(organizationId);
 
-      allow create: if (
+      // One statement for create and update keeps the compiled rules
+      // small (Firebase limit: 256,000 bytes compiled). The id must match
+      // the document ID, so an update cannot change it.
+      allow create, update: if (
           isPlatformAdmin()
           || (
             isOrganizationOperational(organizationId)
@@ -1845,17 +1848,6 @@ service cloud.firestore {
           )
         )
         && isValidKnowledgeArticle()
-        && request.resource.data.id == articleId;
-
-      allow update: if (
-          isPlatformAdmin()
-          || (
-            isOrganizationOperational(organizationId)
-            && isOrganizationStaffOrAbove(organizationId)
-          )
-        )
-        && isValidKnowledgeArticle()
-        && request.resource.data.id == resource.data.id
         && request.resource.data.id == articleId;
 
       allow delete: if isPlatformAdmin()
@@ -1902,24 +1894,16 @@ service cloud.firestore {
       allow get, list: if resource.data.status == "published"
         && "all" in resource.data.audience;
 
-      allow get: if isAuthenticated()
-        && resource.data.status == "published";
-
-      allow get: if isPlatformAdmin();
-
-      allow list: if isPlatformAdmin()
+      allow get, list: if isPlatformAdmin()
         || (
           isAuthenticated()
           && resource.data.status == "published"
         );
 
-      allow create: if isPlatformAdmin()
+      // Create and update in one statement (compiled-size limit); the id
+      // must match the document ID.
+      allow create, update: if isPlatformAdmin()
         && isValidKnowledgeArticle()
-        && request.resource.data.id == articleId;
-
-      allow update: if isPlatformAdmin()
-        && isValidKnowledgeArticle()
-        && request.resource.data.id == resource.data.id
         && request.resource.data.id == articleId;
 
       allow delete: if isPlatformAdmin();
@@ -4164,7 +4148,7 @@ service cloud.firestore {
 
     // Platform backups (Admin → Backups); written only by Cloud Functions.
     match /platformBackups/{backupId} {
-      allow get, list: if isPlatformAdmin();
+      allow read: if isPlatformAdmin();
       allow write: if false;
     }
 
@@ -4257,41 +4241,11 @@ service cloud.firestore {
     // RESOURCE PROBLEM REPORTS ("Report a problem" on a resource)
     // ============================================================
 
-    // Anyone, signed in or not, can report a problem with an existing
-    // resource. Reports start open and only platform administrators
-    // read them or mark them resolved or dismissed.
+    // Written only by the reportResourceProblem and closeResourceReport
+    // functions (functions/src/resource-reports.ts); platform admins read.
     match /resourceReports/{reportId} {
-      allow get, list: if isPlatformAdmin();
-
-      allow create: if request.resource.data.keys().hasOnly([
-          "resourceId", "resourceName", "resourceSlug", "reason",
-          "details", "contactEmail", "reportedBy", "status", "createdAt"
-        ])
-        && request.resource.data.status == "open"
-        && request.resource.data.createdAt == request.time
-        && request.resource.data.resourceId is string
-        && request.resource.data.resourceId.size() > 0
-        && request.resource.data.resourceId.size() <= 100
-        && exists(/databases/$(database)/documents/resources/$(request.resource.data.resourceId))
-        && request.resource.data.resourceName is string
-        && request.resource.data.resourceName.size() <= 200
-        && request.resource.data.resourceSlug is string
-        && request.resource.data.resourceSlug.size() <= 200
-        && request.resource.data.reason in ["closed", "phone", "address", "hours", "link", "eligibility", "other"]
-        && request.resource.data.details is string
-        && request.resource.data.details.size() <= 1000
-        && request.resource.data.contactEmail is string
-        && request.resource.data.contactEmail.size() <= 200
-        && (
-          (request.auth == null && request.resource.data.reportedBy == null)
-          || (request.auth != null && request.resource.data.reportedBy == request.auth.uid)
-        );
-
-      allow update: if isPlatformAdmin()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["status", "resolvedBy", "resolvedAt"])
-        && request.resource.data.status in ["open", "resolved", "dismissed"];
-
-      allow delete: if isPlatformAdmin();
+      allow read: if isPlatformAdmin();
+      allow write: if false;
     }
 
     // ============================================================
@@ -5156,9 +5110,7 @@ service cloud.firestore {
         && data.organizationId == organizationId
         && data.authorId is string
         && data.authorName is string
-        && data.pinned is bool
-        // "Continue on Zebron" links (related-links.ts): at most 8.
-        && (!data.keys().hasAny(["related"]) || (data.related is list && data.related.size() <= 8));
+        && data.pinned is bool;
     }
 
     function isValidBlogComment() {
