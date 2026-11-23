@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!--
+  Zebron Coding Lab: web page preview.
+
+  CodeRunnerService loads this page in an iframe with
+  sandbox="allow-scripts allow-forms" and NOT allow-same-origin, so it has
+  an opaque origin: the learner's page cannot read Zebron's cookies,
+  storage or IndexedDB (where Firebase keeps the sign-in), cannot call
+  Zebron as the learner, and cannot open pop-ups or leave the frame.
+
+  The Coding Lab sends the page to show (built by web-code.ts
+  buildPreviewDocument) and this page writes it in place. The policy below
+  stays in force for the written page: inline scripts and styles, images,
+  fonts and media from https, and no network requests, form submissions or
+  frames.
+-->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval'; style-src 'unsafe-inline' https:; img-src data: blob: https:; font-src data: https:; media-src data: blob: https:; connect-src 'none'; form-action 'none'; base-uri 'none'; frame-src 'none'; object-src 'none'; worker-src 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Preview</title>
+</head>
+<body>
+<script>
+(() => {
+  'use strict';
+  const PARENT = window.parent;
+  const MAX_PAGE = 400000;
+
+  window.addEventListener('message', (event) => {
+    // Only the page that embeds this preview may control it.
+    if (event.source !== PARENT) return;
+    const data = event.data;
+    if (!data || data.source !== 'zebron-code-lab' || data.type !== 'render') return;
+    if (typeof data.html !== 'string' || data.html.length > MAX_PAGE) return;
+    document.open();
+    document.write(data.html);
+    document.close();
+  });
+
+  PARENT.postMessage({ source: 'zebron-web-preview', type: 'ready' }, '*');
+})();
+</script>
+</body>
+</html>

@@ -22,8 +22,9 @@ import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { LoggerService } from '../../core/services/logger.service';
 import { renderKnowledgeContent } from '../partner/knowledge/knowledge-content.util';
 
-import { CodeEditorComponent } from './code-editor.component';
+import { CodeEditorComponent, EditorLanguage } from './code-editor.component';
 import { CodeExercise, CODE_LANGUAGES, OutputLine, TestResult } from './code-lab.model';
+import { WEB_TABS, WebTab, parseWebCode, setWebTab } from './web-code';
 import { CodeLabStorageService } from './code-lab-storage.service';
 import { CodeRunnerService } from './code-runner.service';
 
@@ -31,6 +32,9 @@ import { CodeRunnerService } from './code-runner.service';
  * Zebron Coding Lab panel: instructions, editor, Run / Check / Reset, hints,
  * output console and check results. Used for lesson exercises, runnable
  * lesson examples, and the Coding Lab page.
+ *
+ * Web pages (language 'web') get HTML, CSS and JavaScript tabs over the
+ * editor and a live preview under it, which updates as the learner types.
  */
 @Component({
   selector: 'app-code-lab',
@@ -66,12 +70,12 @@ import { CodeRunnerService } from './code-runner.service';
       <div [class]="mainClass()">
       <!-- Toolbar -->
       <div class="order-3 flex flex-wrap items-center gap-1.5 border-b border-slate-800 bg-[#0f2b38] px-2 py-1.5">
-        <button type="button" (click)="runCode()" [disabled]="running()" class="inline-flex h-8 items-center gap-1 rounded-md bg-[#12bfc3] px-3 text-sm font-semibold text-[#032d42] hover:bg-[#3fd3d6] disabled:opacity-60" [title]="'Run (Ctrl+Enter)' | t">
-          <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">{{ running() ? 'hourglass_empty' : 'play_arrow' }}</mat-icon>
-          {{ (running() ? 'Running…' : 'Run') | t }}
+        <button type="button" (click)="runCode()" [disabled]="running() && !isWeb()" class="inline-flex h-8 items-center gap-1 rounded-md bg-[#12bfc3] px-3 text-sm font-semibold text-[#032d42] hover:bg-[#3fd3d6] disabled:opacity-60" [title]="'Run (Ctrl+Enter)' | t">
+          <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">{{ running() && !isWeb() ? 'hourglass_empty' : 'play_arrow' }}</mat-icon>
+          {{ (running() && !isWeb() ? 'Running…' : 'Run') | t }}
         </button>
         @if (exercise().tests.length) {
-          <button type="button" (click)="check()" [disabled]="running()" class="inline-flex h-8 items-center gap-1 rounded-md border border-teal-300/60 px-3 text-sm font-semibold text-teal-100 hover:bg-white/10 disabled:opacity-60">
+          <button type="button" (click)="check()" [disabled]="running() && !isWeb()" class="inline-flex h-8 items-center gap-1 rounded-md border border-teal-300/60 px-3 text-sm font-semibold text-teal-100 hover:bg-white/10 disabled:opacity-60">
             <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">fact_check</mat-icon>
             {{ 'Check my code' | t }}
           </button>
@@ -101,18 +105,50 @@ import { CodeRunnerService } from './code-runner.service';
         </button>
       </div>
 
+      <!-- Web pages: one tab for each file -->
+      @if (isWeb()) {
+        <div class="order-4 flex items-end gap-0.5 border-b border-slate-800 bg-[#0b1f2a] px-2 pt-1.5" role="tablist" [attr.aria-label]="'Files' | t">
+          @for (tab of webTabs(); track tab.value) {
+            <button
+              type="button"
+              role="tab"
+              [attr.aria-selected]="activeTab() === tab.value"
+              (click)="activeTab.set(tab.value)"
+              class="rounded-t-md px-3 py-1.5 text-xs font-semibold"
+              [class]="activeTab() === tab.value ? 'bg-[#0f2b38] text-teal-200' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'"
+            >{{ tab.label }}</button>
+          }
+          <span class="flex-1"></span>
+          <span class="hidden pb-1.5 text-[11px] text-slate-500 sm:inline">{{ 'The preview updates as you type.' | t }}</span>
+        </div>
+      }
+
       <div [class]="editorWrapClass()">
-        <app-code-editor [class]="fullscreen() ? 'absolute inset-0 block' : 'block'" [(code)]="code" [language]="exercise().language" [height]="fullscreen() ? '100%' : editorHeight()" [label]="'Code editor' | t" (run)="runCode()" />
+        <app-code-editor [class]="fullscreen() ? 'absolute inset-0 block' : 'block'" [code]="editorCode()" (codeChange)="onEditorCode($event)" [language]="editorLanguage()" [height]="fullscreen() ? '100%' : editorHeight()" [label]="editorLabel() | t" (run)="runCode()" />
       </div>
 
-      <!-- Program input for prompt() -->
-      <details class="order-5 border-t border-slate-800 bg-[#0b1f2a] text-sm text-slate-300" [open]="stdin().length > 0">
-        <summary class="cursor-pointer px-3 py-1.5 text-xs text-slate-400">{{ (exercise().language === 'python' ? 'Program input (one line for each input())' : 'Program input (one line for each prompt())') | t }}</summary>
-        <textarea class="block h-16 w-full resize-y border-0 bg-[#081822] px-3 py-2 font-mono text-xs text-slate-100 outline-none" [value]="stdin()" (input)="stdin.set($any($event.target).value)" [attr.aria-label]="'Program input' | t" spellcheck="false"></textarea>
-      </details>
+      @if (isWeb()) {
+        <!-- Live preview of the page -->
+        <div class="order-5 border-t border-slate-800 bg-[#0b1f2a]">
+          <div class="flex items-center gap-2 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+            <mat-icon class="!h-4 !w-4 !text-[16px]" aria-hidden="true">web</mat-icon>
+            <span class="flex-1">{{ 'Preview' | t }}</span>
+            <button type="button" (click)="runCode()" class="inline-flex items-center rounded px-1.5 py-0.5 text-slate-300 hover:bg-white/10 hover:text-white" [attr.aria-label]="'Reload the preview' | t" [title]="'Reload the preview' | t">
+              <mat-icon class="!h-4 !w-4 !text-[16px]" aria-hidden="true">refresh</mat-icon>
+            </button>
+          </div>
+          <div #previewHost class="overflow-hidden bg-white" [style.height]="fullscreen() ? '40dvh' : previewHeight()"></div>
+        </div>
+      } @else {
+        <!-- Program input for prompt() -->
+        <details class="order-5 border-t border-slate-800 bg-[#0b1f2a] text-sm text-slate-300" [open]="stdin().length > 0">
+          <summary class="cursor-pointer px-3 py-1.5 text-xs text-slate-400">{{ (exercise().language === 'python' ? 'Program input (one line for each input())' : 'Program input (one line for each prompt())') | t }}</summary>
+          <textarea class="block h-16 w-full resize-y border-0 bg-[#081822] px-3 py-2 font-mono text-xs text-slate-100 outline-none" [value]="stdin()" (input)="stdin.set($any($event.target).value)" [attr.aria-label]="'Program input' | t" spellcheck="false"></textarea>
+        </details>
+      }
 
-      <!-- Console -->
-      @if (hasRun()) {
+      <!-- Console (web pages: only when the page printed something or had an error) -->
+      @if (hasRun() && (!isWeb() || output().length || error())) {
         <div class="order-6 border-t border-slate-800 bg-[#06141c]" role="log" aria-live="polite" [attr.aria-label]="'Output' | t">
           <div class="flex items-center justify-between px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
             <span>{{ 'Output' | t }}</span>
@@ -189,6 +225,8 @@ export class CodeLabComponent {
   readonly instanceKey = input<string | null>(null);
   readonly mode = input<'exercise' | 'example'>('exercise');
   readonly editorHeight = input('18rem');
+  /** Web pages: height of the preview. */
+  readonly previewHeight = input('18rem');
   readonly allowOpenInLab = input(true);
   /** Run once when shown (lesson examples opened with Run). */
   readonly autoRun = input(false);
@@ -247,8 +285,60 @@ export class CodeLabComponent {
     this.wideSplit() ? 'contents lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:flex lg:min-h-0 lg:flex-col' : 'contents',
   );
   protected readonly editorWrapClass = computed(() =>
-    this.fullscreen() ? 'relative order-4 min-h-[60dvh] flex-1 lg:min-h-0' : 'order-4',
+    this.fullscreen() ? `relative order-4 ${this.isWeb() ? 'min-h-[35dvh]' : 'min-h-[60dvh]'} flex-1 lg:min-h-0` : 'order-4',
   );
+
+  // ------------------------------------------------------------------
+  // Web pages: HTML, CSS and JavaScript tabs, and the live preview
+  // ------------------------------------------------------------------
+
+  private readonly previewHost = viewChild<ElementRef<HTMLElement>>('previewHost');
+  protected readonly isWeb = computed(() => this.exercise().language === 'web');
+  protected readonly activeTab = signal<WebTab>('html');
+  private readonly webFiles = computed(() => parseWebCode(this.code()));
+  /** The tabs the exercise offers (and any the learner's code has). */
+  protected readonly webTabs = computed(() => {
+    const tabs = new Set([...parseWebCode(this.exercise().starter).tabs, ...this.webFiles().tabs]);
+    return WEB_TABS.filter((tab) => tabs.has(tab.value));
+  });
+  protected readonly editorCode = computed(() => (this.isWeb() ? this.webFiles()[this.activeTab()] : this.code()));
+  protected readonly editorLanguage = computed<EditorLanguage>(() => {
+    if (!this.isWeb()) return this.exercise().language;
+    const tab = this.activeTab();
+    return tab === 'js' ? 'javascript' : tab;
+  });
+  protected readonly editorLabel = computed(() => {
+    if (!this.isWeb()) return 'Code editor';
+    const tab = this.activeTab();
+    return tab === 'html' ? 'HTML editor' : tab === 'css' ? 'CSS editor' : 'JavaScript editor';
+  });
+
+  protected onEditorCode(text: string): void {
+    if (!this.isWeb()) {
+      this.code.set(text);
+      return;
+    }
+    const tab = this.activeTab();
+    if (this.webFiles()[tab] === text) return;
+    this.code.set(setWebTab(this.code(), tab, text));
+  }
+
+  private previewTimer: ReturnType<typeof setTimeout> | null = null;
+  /** The code changed during a run: run again when it finishes. */
+  private runAgain = false;
+  /** Check my code was clicked during a preview update. */
+  private checkAgain = false;
+
+  /** Update the preview a moment after the learner stops typing. */
+  private schedulePreview(delay = 600): void {
+    if (this.previewTimer) clearTimeout(this.previewTimer);
+    this.previewTimer = setTimeout(() => {
+      this.previewTimer = null;
+      if (!this.isWeb()) return;
+      if (this.running()) this.runAgain = true;
+      else void this.runCode();
+    }, delay);
+  }
 
   protected toggleFullscreen(): void {
     if (this.fullscreen()) this.exitFullscreen();
@@ -310,6 +400,7 @@ export class CodeLabComponent {
       untracked(() => {
         if (identity === this.loadedIdentity) return;
         this.loadedIdentity = identity;
+        this.activeTab.set('html');
         this.code.set(exercise.starter);
         this.lastSaved = exercise.starter;
         this.results.set([]);
@@ -336,14 +427,21 @@ export class CodeLabComponent {
       });
     });
 
+    // Web pages: keep the preview up to date.
+    effect(() => {
+      this.code();
+      if (this.isWeb()) untracked(() => this.schedulePreview(this.hasRun() ? 600 : 50));
+    });
+
     afterNextRender(() => {
-      if (this.autoRun()) void this.runCode();
+      if (this.autoRun() && !this.isWeb()) void this.runCode();
     });
 
     this.document.addEventListener('fullscreenchange', this.onBrowserFullscreenChange);
 
     inject(DestroyRef).onDestroy(() => {
       this.document.removeEventListener('fullscreenchange', this.onBrowserFullscreenChange);
+      if (this.previewTimer) clearTimeout(this.previewTimer);
       if (this.fullscreen()) this.exitFullscreen();
       if (this.saveTimer) {
         clearTimeout(this.saveTimer);
@@ -385,7 +483,14 @@ export class CodeLabComponent {
   }
 
   protected async runCode(withTests = false): Promise<void> {
-    if (this.running()) return;
+    if (this.running()) {
+      // Web pages update while the learner types: run (or check) again afterwards.
+      if (this.isWeb()) {
+        if (withTests) this.checkAgain = true;
+        else this.runAgain = true;
+      }
+      return;
+    }
     this.running.set(true);
     this.hasRun.set(true);
     this.output.set([]);
@@ -396,11 +501,20 @@ export class CodeLabComponent {
       stdin: this.stdin(),
       tests,
       onOutput: (line) => this.output.update((lines) => [...lines, line]),
+      previewHost: this.previewHost()?.nativeElement ?? null,
     });
     this.output.set(result.output);
     this.error.set(result.error);
     this.duration.set(result.durationMs);
     this.running.set(false);
+    if (this.checkAgain) {
+      this.checkAgain = false;
+      this.runAgain = false;
+      void this.runCode(true);
+    } else if (this.runAgain) {
+      this.runAgain = false;
+      this.schedulePreview(0);
+    }
 
     if (withTests) {
       this.attempts.update((count) => count + 1);

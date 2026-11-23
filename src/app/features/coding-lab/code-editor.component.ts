@@ -16,6 +16,9 @@ import {
 
 import type { CodeLanguage } from './code-lab.model';
 
+/** What the editor colours: a lab language, or one tab of a web page. */
+export type EditorLanguage = CodeLanguage | 'html' | 'css';
+
 /**
  * The Coding Lab editor: CodeMirror 6 (syntax colours, bracket matching,
  * auto-closing brackets, search with Ctrl+F, Tab indenting, Ctrl+Enter runs).
@@ -62,7 +65,7 @@ import type { CodeLanguage } from './code-lab.model';
 })
 export class CodeEditorComponent {
   readonly code = model('');
-  readonly language = input<CodeLanguage>('javascript');
+  readonly language = input<EditorLanguage>('javascript');
   readonly label = input('Code editor');
   readonly height = input('18rem');
   readonly readonly = input(false);
@@ -112,13 +115,15 @@ export class CodeEditorComponent {
 
   private async startCodeMirror(): Promise<void> {
     try {
-      const [setup, viewModule, state, commands, javascript, python, theme] = await Promise.all([
+      const [setup, viewModule, state, commands, javascript, python, html, css, theme] = await Promise.all([
         import('codemirror'),
         import('@codemirror/view'),
         import('@codemirror/state'),
         import('@codemirror/commands'),
         import('@codemirror/lang-javascript'),
         import('@codemirror/lang-python'),
+        import('@codemirror/lang-html'),
+        import('@codemirror/lang-css'),
         import('@codemirror/theme-one-dark'),
       ]);
       const host = this.host()?.nativeElement;
@@ -129,6 +134,8 @@ export class CodeEditorComponent {
         state,
         javascript: javascript.javascript,
         python: python.python,
+        html: html.html,
+        css: css.css,
         languageSlot: new state.Compartment(),
         readOnlySlot: new state.Compartment(),
       };
@@ -176,8 +183,11 @@ export class CodeEditorComponent {
     }
   }
 
-  private languageSupport(language: CodeLanguage): unknown {
-    return language === 'python' ? this.cm.python() : this.cm.javascript();
+  private languageSupport(language: EditorLanguage): unknown {
+    if (language === 'python') return this.cm.python();
+    if (language === 'html' || language === 'web') return this.cm.html();
+    if (language === 'css') return this.cm.css();
+    return this.cm.javascript();
   }
 
   protected readonly lineNumbers = computed(() => Array.from({ length: Math.max(1, this.code().split('\n').length) }, (_, index) => index + 1));

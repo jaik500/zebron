@@ -148,17 +148,22 @@ const MAX_QUESTIONS = 20;
               @for (language of codeLanguages; track language.value) {
                 <button type="button" (click)="setLanguage(language.value)" [attr.aria-pressed]="code().language === language.value" class="h-8 rounded-lg border px-3 text-sm font-semibold" [ngClass]="code().language === language.value ? 'border-[#007979] bg-teal-50 text-[#007979]' : 'border-slate-200 text-slate-600 hover:bg-slate-50'">{{ language.label }}</button>
               }
-              <span class="text-xs text-slate-500">{{ 'Learners run it in their browser; it can\\u0027t reach the web page or other websites.' | t }}</span>
+              <span class="text-xs text-slate-500">{{ (code().language === 'web' ? 'Learners build the page in their browser and see it in a live preview.' : 'Learners run it in their browser; it can\\u0027t reach the web page or other websites.') | t }}</span>
             </div>
 
             <label class="flex flex-col gap-1">
               <span class="text-xs font-semibold text-slate-600">{{ 'Starting code (what learners see first)' | t }}</span>
+              @if (code().language === 'web') {
+                <span class="text-xs text-slate-500">{{ 'Start each tab with a line: --- html ---, --- css --- or --- js ---. Leave a tab out to hide it from learners.' | t }}</span>
+              }
               <textarea class="code-input" rows="8" spellcheck="false" [value]="code().starter" (input)="set({ starter: value($event) })"></textarea>
             </label>
 
             <fieldset class="flex flex-col gap-2 rounded-xl border border-slate-200 p-3">
               <legend class="px-1 text-sm font-bold text-slate-700">{{ 'Checks' | t }}</legend>
-              @if (code().language === 'python') {
+              @if (code().language === 'web') {
+                <p class="text-xs text-slate-500">{{ 'Each check runs in the learner\\u0027s page after it loads and fails by throwing. Use assert(condition, message), assertEqual(actual, expected), $(selector), $$(selector), text(selector), style(selector, property), color(value), click(selector), type(selector, text), await wait(ms) and __output().' | t }}</p>
+              } @else if (code().language === 'python') {
                 <p class="text-xs text-slate-500">{{ 'Each check is Python run after the learner\\u0027s code, with access to its functions and variables. It fails when it raises: use assert condition, "message". __output() returns what the code printed.' | t }}</p>
               } @else {
                 <p class="text-xs text-slate-500">{{ 'Each check runs after the learner\\u0027s code and fails by throwing. Use assert(condition, message), assertEqual(actual, expected) and __output() (what the code printed).' | t }}</p>
@@ -169,7 +174,7 @@ const MAX_QUESTIONS = 20;
                     <input class="h-9 min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-sm" [value]="test.name" [placeholder]="'What it checks, e.g. sum([1, 2]) returns 3' | t" (input)="setTest(testIndex, { name: value($event) })" [attr.aria-label]="'Check description' | t" />
                     <button type="button" class="icon-btn hover:!text-rose-600" (click)="removeTest(testIndex)" [attr.aria-label]="'Remove check' | t" [matTooltip]="'Remove check' | t"><mat-icon>delete</mat-icon></button>
                   </div>
-                  <textarea class="code-input" rows="2" spellcheck="false" [value]="test.code" [placeholder]="code().language === 'python' ? 'assert total([1, 2]) == 3' : 'assertEqual(sum([1, 2]), 3);'" (input)="setTest(testIndex, { code: value($event) })" [attr.aria-label]="'Check code' | t"></textarea>
+                  <textarea class="code-input" rows="2" spellcheck="false" [value]="test.code" [placeholder]="code().language === 'python' ? 'assert total([1, 2]) == 3' : code().language === 'web' ? 'assertEqual(text(\\u0027h1\\u0027), \\u0027Hello\\u0027);' : 'assertEqual(sum([1, 2]), 3);'" (input)="setTest(testIndex, { code: value($event) })" [attr.aria-label]="'Check code' | t"></textarea>
                   @if (testResults()[testIndex]; as result) {
                     <p class="text-xs font-semibold" [class]="result.passed ? 'text-emerald-700' : 'text-rose-700'">
                       {{ (result.passed ? 'The solution passes this check.' : 'The solution fails this check:') | t }} {{ result.passed ? '' : result.message }}

@@ -44,6 +44,8 @@
     "@angular/service-worker": "21.2.20",
     "@angular/ssr": "^21.1.4",
     "@codemirror/commands": "^6.11.1",
+    "@codemirror/lang-css": "^6.3.1",
+    "@codemirror/lang-html": "^6.4.9",
     "@codemirror/lang-javascript": "^6.2.5",
     "@codemirror/lang-python": "^6.2.1",
     "@codemirror/state": "^6.7.6",

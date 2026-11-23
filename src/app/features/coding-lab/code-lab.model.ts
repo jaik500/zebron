@@ -1,11 +1,32 @@
 /** Zebron Coding Lab: shared types. */
 
-/** Languages the lab runs, both in the learner's browser. */
-export type CodeLanguage = 'javascript' | 'python';
+/**
+ * Languages the lab runs, all in the learner's browser. 'web' is a web page
+ * (HTML, CSS and JavaScript tabs with a live preview; see web-code.ts).
+ */
+export type CodeLanguage = 'javascript' | 'python' | 'web';
 
-export const CODE_LANGUAGES: { value: CodeLanguage; label: string; fence: string[]; print: string; starter: string }[] = [
-  { value: 'javascript', label: 'JavaScript', fence: ['js', 'javascript'], print: 'console.log()', starter: '// Write your code here\n' },
-  { value: 'python', label: 'Python', fence: ['py', 'python'], print: 'print()', starter: '# Write your code here\n' },
+/** Starting code for a new web exercise or page (all three tabs). */
+export const WEB_STARTER = `--- html ---
+<h1>Hello, Zebron!</h1>
+<p>Change the HTML, CSS and JavaScript tabs. The preview updates as you type.</p>
+--- css ---
+body {
+  font-family: system-ui, sans-serif;
+  margin: 2rem;
+}
+
+h1 {
+  color: #007979;
+}
+--- js ---
+console.log('The page is ready.');
+`;
+
+export const CODE_LANGUAGES: { value: CodeLanguage; label: string; badge: string; fence: string[]; print: string; starter: string }[] = [
+  { value: 'javascript', label: 'JavaScript', badge: 'JS', fence: ['js', 'javascript'], print: 'console.log()', starter: '// Write your code here\n' },
+  { value: 'python', label: 'Python', badge: 'PY', fence: ['py', 'python'], print: 'print()', starter: '# Write your code here\n' },
+  { value: 'web', label: 'HTML & CSS', badge: 'WEB', fence: ['html'], print: 'console.log()', starter: WEB_STARTER },
 ];
 
 export function isCodeLanguage(value: unknown): value is CodeLanguage {

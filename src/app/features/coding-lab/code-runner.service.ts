@@ -1,9 +1,13 @@
 import { Injectable, signal } from '@angular/core';
 
-import { CodeLanguage, CodeTest, OutputLine, RunResult } from './code-lab.model';
+import { CodeLanguage, CodeTest, OutputLine, RunResult, TestResult } from './code-lab.model';
+import { buildPreviewDocument, parseWebCode } from './web-code';
+
+/** Languages that run in a worker (web pages run in a preview frame). */
+type WorkerLanguage = Exclude<CodeLanguage, 'web'>;
 
 /** A run longer than this is stopped (an endless loop, usually). */
-const TIME_LIMIT_MS: Record<CodeLanguage, number> = { javascript: 8000, python: 15000 };
+const TIME_LIMIT_MS: Record<CodeLanguage, number> = { javascript: 8000, python: 15000, web: 10000 };
 /** Python downloads once (about 10 MB) and is then cached by the browser. */
 const PYTHON_LOAD_LIMIT_MS = 90_000;
 /** Lines kept from one run; the rest are dropped with a note. */
@@ -17,8 +21,14 @@ const SANDBOX_LOAD_LIMIT_MS = 20_000;
  */
 const SANDBOX_URL = '/coding-lab/sandbox.html?v=1';
 
+/**
+ * The web page preview (public/coding-lab/preview.html). Bump v when the
+ * page changes.
+ */
+const PREVIEW_URL = '/coding-lab/preview.html?v=1';
+
 /** Worker sources, sent into the sandbox (which cannot load them itself). */
-const WORKER_SOURCE_URLS: Record<CodeLanguage, string> = {
+const WORKER_SOURCE_URLS: Record<WorkerLanguage, string> = {
   javascript: '/coding-lab/js-worker.js',
   python: '/coding-lab/python-worker.js',
 };
@@ -93,10 +103,10 @@ class CodingSandbox {
   private frame: HTMLIFrameElement | null = null;
   private ready: Promise<void> | null = null;
   private readonly workers = new Map<number, SandboxedWorker>();
-  private readonly sources = new Map<CodeLanguage, Promise<string>>();
+  private readonly sources = new Map<WorkerLanguage, Promise<string>>();
   private nextId = 0;
 
-  async createWorker(language: CodeLanguage): Promise<SandboxedWorker> {
+  async createWorker(language: WorkerLanguage): Promise<SandboxedWorker> {
     const [, source] = await Promise.all([this.start(), this.source(language)]);
     const worker = new SandboxedWorker(this, ++this.nextId);
     this.workers.set(worker.id, worker);
@@ -119,7 +129,7 @@ class CodingSandbox {
     this.frame?.contentWindow?.postMessage({ source: 'zebron-code-lab', ...message }, '*');
   }
 
-  private source(language: CodeLanguage): Promise<string> {
+  private source(language: WorkerLanguage): Promise<string> {
     let source = this.sources.get(language);
     if (!source) {
       // no-cache: check for a newer worker after each deploy.
@@ -201,6 +211,9 @@ class CodingSandbox {
  * JavaScript: a fresh worker per run, terminated afterwards.
  * Python: one worker kept between runs (Python takes a few seconds to
  * start); it is terminated and started again when a run takes too long.
+ * Web pages: a fresh preview frame per run (see runWeb), shown in the
+ * panel's preview area, or off screen when there is none (the course
+ * builder checking a solution).
  */
 @Injectable({ providedIn: 'root' })
 export class CodeRunnerService {
@@ -210,6 +223,8 @@ export class CodeRunnerService {
   private pythonWorker: SandboxedWorker | null = null;
   private pythonReady: Promise<SandboxedWorker> | null = null;
   private runId = 0;
+  /** The web page run showing in each preview area (to cancel when replaced). */
+  private readonly webRuns = new WeakMap<HTMLElement, () => void>();
   /** Python runs one at a time (one interpreter). */
   private pythonQueue: Promise<unknown> = Promise.resolve();
 
@@ -223,8 +238,11 @@ export class CodeRunnerService {
   run(
     language: CodeLanguage,
     code: string,
-    options: { stdin?: string; tests?: CodeTest[]; onOutput?: (line: OutputLine) => void } = {},
+    options: RunOptions = {},
   ): Promise<RunResult> {
+    if (language === 'web') {
+      return this.runWeb(code, options);
+    }
     if (language === 'python') {
       const run = this.pythonQueue.then(() => this.runPython(code, options));
       this.pythonQueue = run.catch(() => undefined);
@@ -323,6 +341,127 @@ export class CodeRunnerService {
     this.pythonStatus.set('idle');
   }
 
+  // ---------- Web pages ----------
+
+  /**
+   * Show a web page in a fresh preview frame: sandbox="allow-scripts
+   * allow-forms" without allow-same-origin, so the page has an opaque origin
+   * (no access to Zebron, the learner's sign-in or storage), cannot open
+   * pop-ups or leave the frame. preview.html sets its own policy: no network
+   * requests or form submissions. Endless loops are stopped inside the page
+   * (web-code.ts protectLoops); a page that stops answering is removed.
+   */
+  private runWeb(code: string, options: RunOptions): Promise<RunResult> {
+    const started = performance.now();
+    const output: OutputLine[] = [];
+    const errors: string[] = [];
+    const tests = options.tests ?? [];
+    if (typeof document === 'undefined') {
+      return Promise.resolve(failed('The Coding Lab runs in the browser only.'));
+    }
+
+    const id = ++this.runId;
+    const page = buildPreviewDocument(parseWebCode(code), id, tests).html;
+    const host = options.previewHost ?? null;
+
+    const frame = document.createElement('iframe');
+    frame.setAttribute('sandbox', 'allow-scripts allow-forms');
+    frame.setAttribute('referrerpolicy', 'no-referrer');
+    frame.title = 'Preview of your page';
+    if (host) {
+      frame.style.cssText = 'display:block;width:100%;height:100%;border:0;background:#fff;';
+    } else {
+      frame.setAttribute('aria-hidden', 'true');
+      frame.tabIndex = -1;
+      frame.style.cssText = 'position:fixed;left:-10000px;top:0;width:1024px;height:768px;border:0;visibility:hidden;';
+      document.body.appendChild(frame);
+    }
+
+    return new Promise((resolve) => {
+      let settled = false;
+      let dropped = 0;
+      const push = (line: OutputLine) => {
+        if (output.length >= MAX_LINES) {
+          dropped++;
+          return;
+        }
+        output.push(line);
+        options.onOutput?.(line);
+      };
+      const finish = (testResults: TestResult[], error: string | null, timedOut = false) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(loadTimer);
+        clearTimeout(runTimer);
+        window.removeEventListener('message', onMessage);
+        if (host && this.webRuns.get(host) === cancel) this.webRuns.delete(host);
+        if (!host) frame.remove();
+        else if (timedOut && frame.parentNode === host) {
+          // Stop the page: removing the frame ends its scripts.
+          const note = document.createElement('p');
+          note.textContent = 'The page was stopped because it stopped responding.';
+          note.style.cssText = 'margin:0;padding:1rem;font:14px system-ui,sans-serif;color:#9f1239;';
+          host.replaceChildren(note);
+        }
+        if (dropped) output.push({ stream: 'system', text: `… ${dropped} more lines not shown.` });
+        resolve({ output, error, tests: testResults, timedOut, durationMs: Math.round(performance.now() - started) });
+      };
+      const notChecked = (message: string) => tests.map((test) => ({ name: test.name, passed: false, message }));
+      // A newer run in the same preview replaces this one.
+      const cancel = () => finish(notChecked('Not checked: the page was run again.'), null);
+      if (host) {
+        this.webRuns.get(host)?.();
+        this.webRuns.set(host, cancel);
+      }
+
+      let runTimer: ReturnType<typeof setTimeout> | undefined;
+      const loadTimer = setTimeout(() => finish(notChecked('Not checked: the preview did not load.'), 'The preview could not load. Try again.'), SANDBOX_LOAD_LIMIT_MS);
+
+      const onMessage = (event: MessageEvent) => {
+        // Only messages from this run's frame; they come from learners' code, so treat them as data.
+        if (!frame.contentWindow || event.source !== frame.contentWindow) return;
+        const data = event.data;
+        if (!data || data.source !== 'zebron-web-preview') return;
+        if (data.type === 'ready') {
+          clearTimeout(loadTimer);
+          frame.contentWindow.postMessage({ source: 'zebron-code-lab', type: 'render', html: page }, '*');
+          runTimer = setTimeout(
+            () =>
+              finish(
+                notChecked('Not checked: the page was stopped.'),
+                `Stopped after ${TIME_LIMIT_MS.web / 1000} seconds. Is there a loop that never ends?`,
+                true,
+              ),
+            TIME_LIMIT_MS.web,
+          );
+          return;
+        }
+        if (data.runId !== id) return;
+        if (data.type === 'output') {
+          const stream = data.stream === 'stderr' || data.stream === 'system' ? data.stream : 'stdout';
+          push({ stream, text: String(data.text ?? '') });
+        } else if (data.type === 'error') {
+          if (errors.length < 20) errors.push(String(data.text ?? 'Error'));
+        } else if (data.type === 'done') {
+          const results: TestResult[] = Array.isArray(data.tests)
+            ? data.tests.slice(0, tests.length).map((result: { name?: unknown; passed?: unknown; message?: unknown }, index: number) => ({
+                name: tests[index]?.name ?? String(result?.name ?? ''),
+                passed: result?.passed === true,
+                message: String(result?.message ?? ''),
+              }))
+            : [];
+          // A check the page didn't report counts as failed.
+          while (results.length < tests.length) results.push({ name: tests[results.length].name, passed: false, message: 'Not checked.' });
+          finish(results, errors.length ? errors.join('\n') : null);
+        }
+      };
+
+      window.addEventListener('message', onMessage);
+      frame.src = PREVIEW_URL;
+      if (host) host.replaceChildren(frame);
+    });
+  }
+
   // ---------- Shared ----------
 
   private execute(
@@ -392,10 +531,12 @@ export class CodeRunnerService {
   }
 }
 
-interface RunOptions {
+export interface RunOptions {
   stdin?: string;
   tests?: CodeTest[];
   onOutput?: (line: OutputLine) => void;
+  /** Web pages: where the preview frame goes (off screen when missing). */
+  previewHost?: HTMLElement | null;
 }
 
 function failed(error: string): RunResult {

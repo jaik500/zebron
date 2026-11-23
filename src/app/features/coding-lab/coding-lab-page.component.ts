@@ -12,15 +12,16 @@ import { CourseAccessService } from '../courses/course-access.service';
 import { courseContextFromRoute } from '../courses/course.model';
 
 import { CodeLabComponent } from './code-lab.component';
-import { CODE_LANGUAGES, CodeExercise, CodeLanguage, CodeProject } from './code-lab.model';
+import { CODE_LANGUAGES, CodeExercise, CodeLanguage, CodeProject, isCodeLanguage } from './code-lab.model';
 import { CodeLabStorageService } from './code-lab-storage.service';
-import { LAB_EXERCISES, LAB_TEMPLATES, LabExercise, PYTHON_EXERCISES, PYTHON_TEMPLATES } from './lab-exercises';
+import { LAB_EXERCISES, LAB_TEMPLATES, LabExercise, PYTHON_EXERCISES, PYTHON_TEMPLATES, WEB_EXERCISES, WEB_TEMPLATES } from './lab-exercises';
 
 type Selection = { kind: 'project'; id: string } | { kind: 'exercise'; id: string };
 
 /**
  * The Zebron Coding Lab page: the learner's saved projects and guided
- * exercises beside an editor that runs JavaScript in the browser.
+ * exercises beside an editor that runs JavaScript and Python, and builds
+ * web pages (HTML, CSS and JavaScript) with a live preview, in the browser.
  */
 @Component({
   selector: 'app-coding-lab-page',
@@ -64,9 +65,9 @@ type Selection = { kind: 'project'; id: string } | { kind: 'exercise'; id: strin
                 @for (project of projects(); track project.id) {
                   <li>
                     <button type="button" (click)="select({ kind: 'project', id: project.id })" class="flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-slate-50" [class]="isSelected('project', project.id) ? 'bg-teal-50 font-semibold text-[#00605f]' : 'text-slate-700'" [attr.aria-current]="isSelected('project', project.id) ? 'true' : null">
-                      <mat-icon class="!h-[18px] !w-[18px] shrink-0 !text-[18px] text-slate-400" aria-hidden="true">code</mat-icon>
+                      <mat-icon class="!h-[18px] !w-[18px] shrink-0 !text-[18px] text-slate-400" aria-hidden="true">{{ project.language === 'web' ? 'web' : 'code' }}</mat-icon>
                       <span class="min-w-0 flex-1 truncate">{{ project.name }}</span>
-                      <span class="shrink-0 rounded px-1 text-[10px] font-bold" [class]="project.language === 'python' ? 'bg-sky-100 text-sky-800' : 'bg-amber-100 text-amber-800'">{{ project.language === 'python' ? 'PY' : 'JS' }}</span>
+                      <span class="shrink-0 rounded px-1 text-[10px] font-bold" [class]="project.language === 'python' ? 'bg-sky-100 text-sky-800' : project.language === 'web' ? 'bg-violet-100 text-violet-800' : 'bg-amber-100 text-amber-800'">{{ badgeOf(project.language) }}</span>
                       @if (dirtyIds().has(project.id)) { <span class="h-2 w-2 shrink-0 rounded-full bg-amber-500" [title]="'Not saved' | t"></span> }
                     </button>
                   </li>
@@ -120,17 +121,18 @@ type Selection = { kind: 'project'; id: string } | { kind: 'exercise'; id: strin
             @if (project.updatedAt) {
               <p class="mb-2 text-xs text-slate-500">{{ 'Last saved {0}' | t: [project.updatedAt | date: 'medium'] }}</p>
             }
-            <app-code-lab [exercise]="projectExercise()!" [instanceKey]="'project:' + project.id" mode="example" editorHeight="26rem" [allowOpenInLab]="false" (codeChange)="onProjectCode($event)" />
+            <app-code-lab [exercise]="projectExercise()!" [instanceKey]="'project:' + project.id" mode="example" [editorHeight]="project.language === 'web' ? '20rem' : '26rem'" previewHeight="22rem" [allowOpenInLab]="false" (codeChange)="onProjectCode($event)" />
           } @else if (currentExercise(); as exercise) {
             <app-code-lab [exercise]="exercise" [instanceKey]="'exercise:' + exercise.id" [saveKey]="'lab__' + exercise.id" editorHeight="20rem" [allowOpenInLab]="false" (passedChange)="markPassed(exercise.id)" />
           } @else {
             <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
               <mat-icon class="!h-10 !w-10 !text-[40px] text-[#007979]" aria-hidden="true">terminal</mat-icon>
               <h1 class="mt-2 text-lg font-semibold text-slate-900">{{ 'Zebron Coding Lab' | t }}</h1>
-              <p class="mx-auto mt-1 max-w-md text-sm text-slate-600">{{ 'Write and run JavaScript or Python right here. Start a project, or pick an exercise: it checks your code and tells you what to fix.' | t }}</p>
+              <p class="mx-auto mt-1 max-w-md text-sm text-slate-600">{{ 'Write and run JavaScript or Python, or build web pages with HTML and CSS, right here. Start a project, or pick an exercise: it checks your code and tells you what to fix.' | t }}</p>
               <div class="mt-4 flex flex-wrap justify-center gap-2">
                 <button type="button" (click)="newProject('My first project', templates[0].code, 'javascript')" class="h-10 rounded-lg bg-[#007979] px-4 text-sm font-semibold text-white hover:bg-[#006666]">{{ 'Start a JavaScript project' | t }}</button>
                 <button type="button" (click)="newProject('My first Python project', pythonTemplates[0].code, 'python')" class="h-10 rounded-lg bg-[#007979] px-4 text-sm font-semibold text-white hover:bg-[#006666]">{{ 'Start a Python project' | t }}</button>
+                <button type="button" (click)="newProject('My first web page', webTemplates[0].code, 'web')" class="h-10 rounded-lg bg-[#007979] px-4 text-sm font-semibold text-white hover:bg-[#006666]">{{ 'Start a web page' | t }}</button>
                 <button type="button" (click)="select({ kind: 'exercise', id: shownExercises()[0].id })" class="h-10 rounded-lg border border-[#007979] px-4 text-sm font-semibold text-[#007979] hover:bg-teal-50">{{ 'Try the first exercise' | t }}</button>
               </div>
             </div>
@@ -153,8 +155,9 @@ export class CodingLabPageComponent {
   protected readonly canManage = computed(() => this.access.canManage(this.context));
   protected readonly templates = LAB_TEMPLATES;
   protected readonly pythonTemplates = PYTHON_TEMPLATES;
+  protected readonly webTemplates = WEB_TEMPLATES;
   protected readonly languages = CODE_LANGUAGES;
-  protected readonly exercises: LabExercise[] = [...LAB_EXERCISES, ...PYTHON_EXERCISES];
+  protected readonly exercises: LabExercise[] = [...LAB_EXERCISES, ...PYTHON_EXERCISES, ...WEB_EXERCISES];
   protected readonly exerciseLanguage = signal<CodeLanguage>('javascript');
   protected readonly shownExercises = computed(() => this.exercises.filter((exercise) => exercise.language === this.exerciseLanguage()));
 
@@ -189,7 +192,11 @@ export class CodingLabPageComponent {
   protected readonly passedCount = computed(() => this.shownExercises().filter((exercise) => this.passed().has('lab__' + exercise.id)).length);
 
   protected templatesFor(language: CodeLanguage) {
-    return [...this.templates, ...this.pythonTemplates].filter((template) => template.language === language);
+    return [...this.templates, ...this.pythonTemplates, ...this.webTemplates].filter((template) => template.language === language);
+  }
+
+  protected badgeOf(language: CodeLanguage): string {
+    return CODE_LANGUAGES.find((item) => item.value === language)?.badge ?? 'JS';
   }
 
   constructor() {
@@ -213,7 +220,7 @@ export class CodingLabPageComponent {
       this.projectsLoading.set(false);
     }
     if (incoming?.code) {
-      this.newProject(incoming.name || 'From a lesson', incoming.code, incoming.language === 'python' ? 'python' : 'javascript');
+      this.newProject(incoming.name || 'From a lesson', incoming.code, isCodeLanguage(incoming.language) ? incoming.language : 'javascript');
     } else if (this.projects().length) {
       this.select({ kind: 'project', id: this.projects()[0].id });
     }

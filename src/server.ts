@@ -119,6 +119,26 @@ const CODING_LAB_SANDBOX_POLICY = [
   "form-action 'none'",
 ].join('; ');
 
+/**
+ * The Coding Lab web page preview (public/coding-lab/preview.html), loaded
+ * in an opaque-origin iframe. It writes the learner's page into itself, which
+ * keeps the page's own (enforced) policy; this header matches it.
+ */
+const CODING_LAB_PREVIEW_POLICY = [
+  "default-src 'none'",
+  "script-src 'unsafe-inline' 'unsafe-eval'",
+  "style-src 'unsafe-inline' https:",
+  "img-src data: blob: https:",
+  "font-src data: https:",
+  "media-src data: blob: https:",
+  "connect-src 'none'",
+  "form-action 'none'",
+  "base-uri 'none'",
+  "frame-src 'none'",
+  "object-src 'none'",
+  "worker-src 'none'",
+].join('; ');
+
 /** The Python worker also loads Pyodide (WebAssembly) and packages from jsDelivr. */
 const CODING_LAB_PYTHON_POLICY = [
   "default-src 'none'",
@@ -137,6 +157,8 @@ app.use((_req, res, next) => {
     'Content-Security-Policy-Report-Only',
     _req.path === '/coding-lab/sandbox.html'
       ? CODING_LAB_SANDBOX_POLICY
+      : _req.path === '/coding-lab/preview.html'
+      ? CODING_LAB_PREVIEW_POLICY
       : _req.path === '/coding-lab/python-worker.js'
       ? CODING_LAB_PYTHON_POLICY
       : _req.path.startsWith('/coding-lab/')

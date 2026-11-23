@@ -4,7 +4,7 @@ Give this file to an AI assistant (or a new developer) at the start of any
 work on Zebron. It explains what Zebron is, how it is built, where things
 live, the rules every change follows, and how we work together.
 
-- **Last updated:** 22 November 2026 (guide edition 121)
+- **Last updated:** 22 November 2026 (guide edition 122)
 - **Also in the Knowledge Center** as "Zebron platform overview for the team" (support and developers), and introduced on the Internal Blog in "How Zebron works: one page for the whole team" (`scripts/seed-blog-zebron-context.mjs`).
 - **Keep it current:** when a change makes anything here wrong (a new
   application, folder, collection, function, rule or way of working), update
@@ -280,7 +280,10 @@ Secrets (Secret Manager, `firebase functions:secrets:set NAME`):
 - **Coding Lab:** learner code runs in Web Workers inside a sandboxed iframe
   (`public/coding-lab/sandbox.html`, opaque origin) started by
   `CodeRunnerService`. Learner code must never run on Zebron's own origin.
-  Bump `?v=` in `SANDBOX_URL` when the sandbox page changes.
+  Bump `?v=` in `SANDBOX_URL` when the sandbox page changes. Web pages
+  (language `web`: HTML, CSS and JavaScript tabs) show in a sandboxed
+  preview iframe (`public/coding-lab/preview.html`, `PREVIEW_URL`;
+  `web-code.ts` builds the page and adds endless-loop guards).
 - **Highlights, notes and bookmarks in lessons:** learners highlight lesson
   text in four colours (yellow important concept, green key definition, blue
   example, pink review later), add notes, copy, bookmark lessons and see it
