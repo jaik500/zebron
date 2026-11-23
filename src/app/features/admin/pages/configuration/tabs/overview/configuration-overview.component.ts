@@ -10,6 +10,7 @@ import { MatIconModule } from '@angular/material/icon';
 
 import { FeatureConfigService } from '../../../../../../core/services/feature-config.service';
 import { SettingsService } from '../../../../../../core/services/settings.service';
+import { BackupStatusCardComponent } from '../../../backups/backup-status-card.component';
 
 @Component({
   selector:
@@ -18,6 +19,7 @@ import { SettingsService } from '../../../../../../core/services/settings.servic
   imports: [
     MatCardModule,
     MatIconModule,
+    BackupStatusCardComponent,
   ],
   changeDetection:
     ChangeDetectionStrategy.OnPush,
@@ -236,6 +238,11 @@ import { SettingsService } from '../../../../../../core/services/settings.servic
         </mat-card>
 
       </div>
+
+
+      <!-- BACKUPS -->
+
+      <app-backup-status-card />
 
 
       <!-- INFORMATION -->

@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, afterNextRender, comput
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
-import { Timestamp, collection, limit, onSnapshot, orderBy, query } from 'firebase/firestore';
+import { collection, limit, onSnapshot, orderBy, query } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { getBlob, ref } from 'firebase/storage';
 
@@ -13,25 +13,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { firebaseApp, firebaseFunctions, firebaseStorage, firestore } from '../../../../core/services/firebase-config';
 import { LoggerService } from '../../../../core/services/logger.service';
-
-type BackupStatus = 'queued' | 'running' | 'complete' | 'partial' | 'failed';
-type ExportState = 'not-started' | 'PROCESSING' | 'SUCCESSFUL' | 'FAILED' | 'CANCELLED' | 'UNKNOWN';
-
-interface PlatformBackup {
-  id: string;
-  status: BackupStatus;
-  trigger: 'manual' | 'scheduled';
-  requestedBy: { uid: string; email: string | null } | null;
-  keep: boolean;
-  createdAt: Date | null;
-  durationSeconds: number | null;
-  records: { total: number; complete: boolean; collections: Record<string, number> } | null;
-  users: number | null;
-  files: { count: number; bytes: number } | null;
-  totalBytes: number | null;
-  problems: string[];
-  firestoreExport: { state: ExportState; documents?: number; error?: string; outputUri?: string };
-}
+import { ExportState, PlatformBackup, isStuckBackup, toBackup } from './platform-backup.model';
 
 interface DownloadFile {
   name: string;
@@ -47,9 +29,6 @@ const DOWNLOADS: DownloadFile[] = [
   { name: 'files.csv', label: 'Uploaded files list', hint: 'Path, size and type of every uploaded file', icon: 'folder_zip' },
   { name: 'summary.json', label: 'Summary', hint: 'Counts and any problems', icon: 'summarize' },
 ];
-
-/** Stuck after this long without finishing (the worker times out at 9 minutes). */
-const STUCK_AFTER_MS = 30 * 60 * 1000;
 
 /** One-time Google Cloud commands, shown in "Set up Google Cloud protection". */
 const PROJECT = String(firebaseApp.options.projectId ?? 'zebron-2b49f');
@@ -456,7 +435,7 @@ export class PlatformBackupsComponent {
   }
 
   private isStuck(backup: PlatformBackup): boolean {
-    return !!backup.createdAt && Date.now() - backup.createdAt.getTime() > STUCK_AFTER_MS;
+    return isStuckBackup(backup);
   }
 
   /** Checks each still-running managed export once when the page opens. */
@@ -486,25 +465,6 @@ export class PlatformBackupsComponent {
       }
     }
   }
-}
-
-function toBackup(id: string, data: Record<string, unknown>): PlatformBackup {
-  const created = data['createdAt'];
-  return {
-    id,
-    status: (data['status'] as BackupStatus) ?? 'queued',
-    trigger: data['trigger'] === 'scheduled' ? 'scheduled' : 'manual',
-    requestedBy: (data['requestedBy'] as PlatformBackup['requestedBy']) ?? null,
-    keep: data['bookmark_border'] === true,
-    createdAt: created instanceof Timestamp ? created.toDate() : null,
-    durationSeconds: typeof data['durationSeconds'] === 'number' ? data['durationSeconds'] : null,
-    records: (data['records'] as PlatformBackup['records']) ?? null,
-    users: typeof data['users'] === 'number' ? data['users'] : null,
-    files: (data['files'] as PlatformBackup['files']) ?? null,
-    totalBytes: typeof data['totalBytes'] === 'number' ? data['totalBytes'] : null,
-    problems: Array.isArray(data['problems']) ? (data['problems'] as string[]) : [],
-    firestoreExport: (data['firestoreExport'] as PlatformBackup['firestoreExport']) ?? { state: 'not-started' },
-  };
 }
 
 function errorText(error: unknown, fallback: string): string {
