@@ -86,11 +86,11 @@ const GROUPS: SkillGroupMeta[] = [
   imports: [RouterLink, MatIconModule, TranslatePipe],
   template: `
     <main class="mt-14 min-h-screen bg-slate-50">
-      <!-- Hero -->
+      <!-- Header (compact): breadcrumb, title, counts and search -->
       <header class="relative overflow-hidden bg-gradient-to-br from-[#032d42] via-[#00575a] to-[#007979] text-white">
         <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[#12bfc3]/25 blur-3xl" aria-hidden="true"></div>
         <div class="pointer-events-none absolute -bottom-32 left-10 h-72 w-72 rounded-full bg-emerald-400/15 blur-3xl" aria-hidden="true"></div>
-        <div class="relative mx-auto max-w-7xl px-4 pb-8 pt-5 sm:px-6 lg:px-8 lg:pb-10">
+        <div class="relative mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8 lg:py-4">
           <nav class="flex items-center gap-1 text-xs text-white/75" [attr.aria-label]="'Breadcrumb' | t">
             @if (coursesAvailable()) {
               <a [routerLink]="coursesLink" class="hover:text-white hover:underline">{{ 'Learning' | t }}</a>
@@ -101,14 +101,17 @@ const GROUPS: SkillGroupMeta[] = [
             <span class="font-semibold text-white">{{ 'Skills' | t }}</span>
           </nav>
 
-          <div class="mt-4 grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-end">
-            <div>
-              <p class="text-xs font-bold uppercase tracking-[0.2em] text-[#7ee8ea]">{{ 'Professional skills' | t }}</p>
-              <h1 class="mt-2 text-3xl font-bold leading-tight sm:text-4xl">{{ 'Skills that make the difference' | t }}</h1>
-              <p class="mt-3 max-w-2xl text-sm leading-6 text-white/85 sm:text-base">
+          <div class="mt-2 grid gap-3 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-center">
+            <div class="min-w-0">
+              <h1 class="text-2xl font-bold leading-tight sm:text-3xl">{{ 'Skills that make the difference' | t }}</h1>
+              <!-- One line on larger screens (full text on hover); hidden on phones to keep the header short. -->
+              <p
+                class="mt-1 hidden max-w-3xl text-sm text-white/80 md:line-clamp-1"
+                [title]="'Practise the mindsets and behaviours employers look for, from growth mindset and teamwork to leadership. Each skill has practice questions and a short course.' | t"
+              >
                 {{ 'Practise the mindsets and behaviours employers look for, from growth mindset and teamwork to leadership. Each skill has practice questions and a short course.' | t }}
               </p>
-              <div class="mt-4 flex flex-wrap gap-2 text-xs font-semibold">
+              <div class="mt-2 flex flex-wrap gap-2 text-xs font-semibold">
                 <span class="inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-1">
                   <mat-icon class="!h-4 !w-4 !text-[16px]" aria-hidden="true">psychology</mat-icon>{{ '{0} skills' | t: [skills().length] }}
                 </span>
@@ -124,15 +127,15 @@ const GROUPS: SkillGroupMeta[] = [
             </div>
 
             <!-- Search -->
-            <div class="rounded-2xl bg-white/10 p-3 ring-1 ring-white/20 backdrop-blur">
+            <div>
               <label class="sr-only" for="skill-search">{{ 'Search skills' | t }}</label>
-              <div class="flex items-center gap-2 rounded-xl bg-white px-3 text-slate-800">
+              <div class="flex items-center gap-2 rounded-xl bg-white px-3 text-slate-800 shadow-sm ring-1 ring-white/20">
                 <mat-icon class="text-slate-400" aria-hidden="true">search</mat-icon>
                 <input
                   id="skill-search"
                   type="search"
                   autocomplete="off"
-                  class="h-11 min-w-0 flex-1 bg-transparent text-sm outline-none"
+                  class="h-10 min-w-0 flex-1 bg-transparent text-sm outline-none"
                   [placeholder]="'Search skills, e.g. teamwork' | t"
                   [value]="search()"
                   (input)="search.set($any($event.target).value)"

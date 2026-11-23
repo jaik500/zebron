@@ -362,7 +362,8 @@ import { ACCENT_PRESETS, BACKGROUND_PRESETS, DEFAULT_ACCENT, DEFAULT_BACKGROUND,
                     <mat-icon class="text-gray-400" aria-hidden="true">business</mat-icon>
                   }
                 </span>
-                <div class="min-w-0 flex-1">
+                <!-- Title and file hints: hidden on phones (the picture and buttons are enough there) -->
+                <div class="min-w-0 flex-1 max-md:hidden">
                   <p class="font-semibold text-gray-900">{{ 'Logo' | t }}</p>
                   <p class="text-sm text-gray-500">{{ 'PNG, JPEG or WebP, up to 5 MB. A square image works best; it is resized to 256 pixels.' | t }}</p>
                 </div>

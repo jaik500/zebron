@@ -24,7 +24,8 @@ export const NAV_BAR_HIDE_MS = 5000;
  * - Slides up when the page scrolls and slides away NAV_BAR_HIDE_MS after
  *   scrolling stops. Touching or focusing the bar, or an open menu, keeps it.
  * - Stays hidden while a text field has focus (the on-screen keyboard is up).
- * - While it shows, --zb-app-nav-offset on <html> is its height plus a gap, so
+ * - Runs edge to edge along the bottom of the screen (like the top bar).
+ * - While it shows, --zb-app-nav-offset on <html> is its height, so
  *   floating buttons (the Help assistant) move up out of its way.
  */
 @Component({
@@ -34,7 +35,7 @@ export const NAV_BAR_HIDE_MS = 5000;
   template: `
     @if (pwa.standalone()) {
       <nav
-        class="zb-app-nav fixed inset-x-3.5 z-40 flex h-10 items-center justify-around rounded-[14px] bg-[#0b3443]/95 text-white shadow-[0_8px_24px_rgb(0_0_0/0.25)] backdrop-blur transition-transform duration-300 ease-out motion-reduce:transition-none lg:hidden"
+        class="zb-app-nav fixed inset-x-0 bottom-0 z-40 flex items-start justify-around bg-[#0b3443] text-white shadow-[0_-2px_10px_rgb(0_0_0/0.2)] transition-transform duration-300 ease-out motion-reduce:transition-none lg:hidden"
         [class.zb-app-nav--hidden]="!shown()"
         [attr.aria-label]="'App navigation' | t"
         [attr.aria-hidden]="shown() ? null : 'true'"
@@ -95,11 +96,14 @@ export const NAV_BAR_HIDE_MS = 5000;
     }
   `,
   styles: `
+    /* Edge to edge and down to the bottom of the screen, like the top bar; the
+       buttons stay above the iPhone home bar (safe area). */
     .zb-app-nav {
-      bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+      height: calc(40px + env(safe-area-inset-bottom, 0px));
+      padding-bottom: env(safe-area-inset-bottom, 0px);
     }
     .zb-app-nav--hidden {
-      transform: translateY(calc(100% + env(safe-area-inset-bottom, 0px) + 24px));
+      transform: translateY(100%);
       pointer-events: none;
     }
     .zb-app-nav__button {
@@ -129,7 +133,7 @@ export class AppNavBarComponent {
     // Lift floating buttons above the bar while it shows (phones and tablets only).
     effect(() => {
       const lift = this.shown() && window.matchMedia('(max-width: 1023.98px)').matches;
-      document.documentElement.style.setProperty('--zb-app-nav-offset', lift ? '56px' : '0px');
+      document.documentElement.style.setProperty('--zb-app-nav-offset', lift ? 'calc(40px + env(safe-area-inset-bottom, 0px))' : '0px');
     });
 
     afterNextRender(() => {
