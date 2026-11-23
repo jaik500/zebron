@@ -5,7 +5,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
-import { AuthService } from '../../../core/services/auth.service';
 import { BackNavigationService } from '../../../core/services/back-navigation.service';
 import { LocalizationService } from '../../../core/services/localization.service';
 import { PwaService } from '../../../core/services/pwa.service';
@@ -75,22 +74,36 @@ export const NAV_BAR_HIDE_MS = 5000;
             <span>{{ 'Install the Zebron app' | t }}</span>
           </button>
         }
-        <div class="flex items-center gap-2 border-b border-gray-100 px-4 pb-2 pt-2 text-xs font-semibold uppercase tracking-wider text-gray-500">
-          <mat-icon aria-hidden="true" class="!h-4 !w-4 !text-base">translate</mat-icon>
-          {{ 'Language' | t }}
-        </div>
-        @for (language of localization.languages(); track language.code) {
-          @let selected = language.code === localization.language();
-          <button mat-menu-item type="button" [disabled]="!language.enabled" [attr.aria-current]="selected ? 'true' : null" (click)="chooseLanguage(language.code)">
-            <span class="flex w-full items-center gap-2">
-              <span class="min-w-0 flex-1" [class]="selected ? 'font-semibold text-[#007979]' : 'text-gray-900'">{{ language.nativeName }}</span>
-              @if (!language.enabled) {
-                <span class="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-500">{{ 'Soon' | t }}</span>
-              } @else if (selected) {
-                <mat-icon aria-hidden="true" class="!m-0 !text-[#007979]">check</mat-icon>
-              }
-            </span>
-          </button>
+        <!-- Language: a dropdown inside the menu. -->
+        <button
+          mat-menu-item
+          type="button"
+          [attr.aria-expanded]="languageOpen()"
+          (click)="$event.stopPropagation(); languageOpen.set(!languageOpen())"
+        >
+          <mat-icon aria-hidden="true">translate</mat-icon>
+          <span class="flex w-full items-center gap-2">
+            <span>{{ 'Language' | t }}</span>
+            <span class="ml-auto font-semibold text-[#007979]">{{ localization.currentLanguage().nativeName }}</span>
+            <mat-icon aria-hidden="true" class="!m-0 text-gray-500">{{ languageOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
+          </span>
+        </button>
+        @if (languageOpen()) {
+          <div class="bg-gray-50" role="group" [attr.aria-label]="'Language' | t">
+            @for (language of localization.languages(); track language.code) {
+              @let selected = language.code === localization.language();
+              <button mat-menu-item type="button" class="!pl-14" [disabled]="!language.enabled" [attr.aria-current]="selected ? 'true' : null" (click)="chooseLanguage(language.code)">
+                <span class="flex w-full items-center gap-2">
+                  <span class="min-w-0 flex-1" [class]="selected ? 'font-semibold text-[#007979]' : 'text-gray-900'">{{ language.nativeName }}</span>
+                  @if (!language.enabled) {
+                    <span class="rounded-full bg-gray-200 px-2 py-0.5 text-[11px] font-semibold text-gray-500">{{ 'Soon' | t }}</span>
+                  } @else if (selected) {
+                    <mat-icon aria-hidden="true" class="!m-0 !text-[#007979]">check</mat-icon>
+                  }
+                </span>
+              </button>
+            }
+          </div>
         }
       </mat-menu>
     }
@@ -120,10 +133,11 @@ export class AppNavBarComponent {
   protected readonly back = inject(BackNavigationService);
   protected readonly localization = inject(LocalizationService);
   private readonly router = inject(Router);
-  private readonly auth = inject(AuthService);
 
   protected readonly shown = signal(false);
   protected readonly menuOpen = signal(false);
+  /** The language list inside the ⋯ menu is open. */
+  protected readonly languageOpen = signal(false);
   private hideTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
@@ -176,6 +190,7 @@ export class AppNavBarComponent {
 
   protected menuClosed(): void {
     this.menuOpen.set(false);
+    this.languageOpen.set(false);
     this.restartTimer();
   }
 
@@ -203,9 +218,9 @@ export class AppNavBarComponent {
     this.restartTimer();
   }
 
-  /** Home: My learning when signed in, otherwise the home page. */
+  /** Home: the Zebron home page. */
   protected goHome(): void {
-    void this.router.navigateByUrl(this.auth.firebaseUser() ? '/courses' : '/');
+    void this.router.navigateByUrl('/');
     this.restartTimer();
   }
 

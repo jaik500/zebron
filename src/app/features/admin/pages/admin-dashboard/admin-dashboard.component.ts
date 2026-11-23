@@ -304,10 +304,25 @@ interface AdminDashboardCard {
             <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
               <mat-icon class="!h-5 !w-5 !text-[20px] text-[#007979]" aria-hidden="true">forward_to_inbox</mat-icon>
               <h2 id="email-usage-title" class="text-sm font-semibold text-[#032D42]">Email usage</h2>
-              <span class="text-xs text-slate-500">Free plan: {{ dailyEmailLimit }} a day, {{ monthlyEmailLimit.toLocaleString() }} a month. Sent and received both count. Times are UTC.</span>
+              <!-- Phones: a one-line summary while the details are hidden -->
+              @if (!emailUsageOpen()) {
+                <span class="text-xs text-slate-600 md:hidden">Today {{ usage.today.total.toLocaleString() }}/{{ dailyEmailLimit }} · Month {{ usage.month.total.toLocaleString() }}/{{ monthlyEmailLimit.toLocaleString() }}</span>
+              }
+              <span [class]="emailUsageOpen() ? 'text-xs text-slate-500' : 'text-xs text-slate-500 max-md:hidden'">Free plan: {{ dailyEmailLimit }} a day, {{ monthlyEmailLimit.toLocaleString() }} a month. Sent and received both count. Times are UTC.</span>
+              <!-- Phones: show or hide the details (hidden by default); always shown on wider screens -->
+              <button
+                type="button"
+                class="ml-auto inline-flex items-center gap-0.5 rounded-lg px-2 py-1 text-xs font-semibold text-[#007979] hover:bg-teal-50 md:hidden"
+                [attr.aria-expanded]="emailUsageOpen()"
+                aria-controls="email-usage-details"
+                (click)="emailUsageOpen.set(!emailUsageOpen())"
+              >
+                {{ emailUsageOpen() ? 'Hide' : 'Show' }}
+                <mat-icon class="!h-4 !w-4 !text-[16px]" aria-hidden="true">{{ emailUsageOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
+              </button>
             </div>
 
-            <div class="mt-2 grid gap-3 sm:grid-cols-2">
+            <div id="email-usage-details" [class]="emailUsageOpen() ? 'mt-2 grid gap-3 sm:grid-cols-2' : 'mt-2 grid gap-3 sm:grid-cols-2 max-md:hidden'">
               @for (meter of emailMeters(); track meter.label) {
                 <div>
                   <div class="flex items-baseline justify-between gap-2 text-sm">
@@ -424,8 +439,8 @@ interface AdminDashboardCard {
               <!-- Favorite: pins the tool to the top of the page -->
               <button
                 type="button"
-                class="absolute right-1.5 top-1.5 z-10 flex h-8 w-8 items-center justify-center rounded-full transition hover:bg-amber-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-amber-300/50 sm:right-3 sm:top-3"
-                [class]="isFavorite(card) ? 'text-amber-500' : 'text-gray-300 hover:text-amber-500'"
+                class="absolute right-1.5 top-1.5 z-10 flex h-8 w-8 items-center justify-center rounded-full transition hover:bg-white/15 focus:outline-none focus-visible:ring-4 focus-visible:ring-amber-300/50 sm:right-3 sm:top-3"
+                [class]="isFavorite(card) ? 'text-amber-300' : 'text-white/60 hover:text-amber-300'"
                 [attr.aria-pressed]="isFavorite(card)"
                 [attr.aria-label]="(isFavorite(card) ? 'Remove from favorites: ' : 'Add to favorites: ') + card.title"
                 [title]="isFavorite(card) ? 'Remove from favorites' : 'Add to favorites (shows at the top)'"
@@ -441,13 +456,14 @@ interface AdminDashboardCard {
                        block h-full
                        pr-9 sm:pr-6
                        rounded-lg
-                       border border-gray-200
-                       bg-white
+                       border border-[#007979]
+                       bg-[#007979]
                        p-2
+                       text-white
                        shadow-sm
                        transition
                        hover:-translate-y-0.5
-                       hover:border-[#007979]/30
+                       hover:bg-[#006666]
                        hover:shadow-md
                        sm:rounded-2xl
                        sm:p-6"
@@ -462,8 +478,8 @@ interface AdminDashboardCard {
                          items-center
                          justify-center
                          rounded-xl
-                         bg-[#007979]/10
-                         text-[#007979]"
+                         bg-white/15
+                         text-white"
                   aria-hidden="true"
                 >
                   @switch (card.icon) {
@@ -877,10 +893,9 @@ interface AdminDashboardCard {
                     class="text-md
                            font-semibold
                            leading-tight
-                           text-[#032D42]
+                           text-white
                            sm:text-xl
-                           sm:leading-normal
-                           group-hover:text-[#007979]"
+                           sm:leading-normal"
                   >
                     {{ card.title }}
                   </h2>
@@ -892,7 +907,7 @@ interface AdminDashboardCard {
                            sm:block
                            sm:text-md
                            sm:leading-6
-                           text-gray-500"
+                           text-white/80"
                   >
                     {{ card.description }}
                   </p>
@@ -906,7 +921,8 @@ interface AdminDashboardCard {
                          text-md
                          font-semibold
                          leading-tight
-                         text-[#007979]
+                         text-teal-100
+                         group-hover:text-white
                          sm:mt-5
                          sm:text-sm"
                 >
@@ -1352,6 +1368,9 @@ export class AdminDashboardComponent {
   protected readonly dailyEmailLimit = 100;
   protected readonly monthlyEmailLimit = 3000;
   protected readonly Math = Math;
+
+  /** Phones: the email usage details are shown (hidden by default; always shown from md up). */
+  protected readonly emailUsageOpen = signal(false);
 
   /** Counted by the Cloud Functions in platformEmailUsage (UTC days and months). */
   protected readonly emailUsage = signal<{

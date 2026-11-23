@@ -1,6 +1,17 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
+import { PwaService } from '../../services/pwa.service';
+
+/**
+ * Site footer.
+ *
+ * - Computers and tablets (md and up): the full footer (brand, Explore, Legal).
+ * - Phones in a browser: a compact footer (logo and Donate, the links in two
+ *   wrapped lines, copyright and email on one line).
+ * - Phones in the installed app: one line (copyright, Privacy, Terms, Help);
+ *   the menu and the bottom navigation bar cover the rest.
+ */
 @Component({
   selector: 'app-footer',
   standalone: true,
@@ -13,12 +24,60 @@ import { RouterLink } from '@angular/router';
              bg-[#032D42]
              text-white"
     >
+      <!-- =====================================================
+           PHONES
+           ===================================================== -->
+      @if (pwa.standalone()) {
+        <!-- Installed app: one line -->
+        <p class="px-4 py-2.5 text-center text-xs text-white/60 md:hidden">
+          © {{ currentYear }} Zebron
+          <span class="mx-1.5 text-white/30" aria-hidden="true">·</span>
+          <a routerLink="/privacy" class="text-white/85 hover:text-white">Privacy</a>
+          <span class="mx-1.5 text-white/30" aria-hidden="true">·</span>
+          <a routerLink="/terms" class="text-white/85 hover:text-white">Terms</a>
+          <span class="mx-1.5 text-white/30" aria-hidden="true">·</span>
+          <a routerLink="/faq" class="text-white/85 hover:text-white">Help</a>
+        </p>
+      } @else {
+        <!-- Browser: compact -->
+        <div class="px-4 py-3.5 md:hidden">
+          <div class="flex items-center justify-between gap-3">
+            <a routerLink="/" aria-label="Zebron home" class="inline-flex items-center gap-1.5">
+              <img src="/zebron-favicon.svg" alt="" class="h-6 w-6" />
+              <span class="text-base font-bold tracking-tight">Zebron</span>
+            </a>
+            <a routerLink="/donate" class="text-sm font-semibold text-[#7ED6D1] hover:text-white">Donate</a>
+          </div>
+          <nav class="mt-2 text-sm leading-7 text-white/75" aria-label="Footer">
+            <a routerLink="/apps" class="hover:text-white">All apps</a><span class="mx-1.5 text-white/30" aria-hidden="true">·</span>
+            <a routerLink="/about" class="hover:text-white">About</a><span class="mx-1.5 text-white/30" aria-hidden="true">·</span>
+            <a routerLink="/jobs" class="hover:text-white">Jobs</a><span class="mx-1.5 text-white/30" aria-hidden="true">·</span>
+            <a routerLink="/contact" class="hover:text-white">Contact</a>
+            <br />
+            <a routerLink="/privacy" class="hover:text-white">Privacy</a><span class="mx-1.5 text-white/30" aria-hidden="true">·</span>
+            <a routerLink="/terms" class="hover:text-white">Terms</a><span class="mx-1.5 text-white/30" aria-hidden="true">·</span>
+            <a routerLink="/accessibility" class="hover:text-white">Accessibility</a><span class="mx-1.5 text-white/30" aria-hidden="true">·</span>
+            <a routerLink="/faq" class="hover:text-white">FAQ</a>
+          </nav>
+          <p class="mt-1.5 text-xs text-white/50">
+            © {{ currentYear }} Zebron
+            <span class="mx-1 text-white/30" aria-hidden="true">·</span>
+            <a href="mailto:support@inbound.zebron.org" class="hover:text-white">contact&#64;zebron.org</a>
+          </p>
+        </div>
+      }
+
+      <!-- =====================================================
+           COMPUTERS AND TABLETS (md and up): the full footer
+           ===================================================== -->
       <div
         class="mx-auto
+               hidden
                max-w-7xl
                px-5
                py-12
                sm:px-6
+               md:block
                lg:px-8"
       >
         <!-- =====================================================
@@ -262,5 +321,6 @@ import { RouterLink } from '@angular/router';
   `,
 })
 export class FooterComponent {
+  protected readonly pwa = inject(PwaService);
   readonly currentYear = new Date().getFullYear();
 }

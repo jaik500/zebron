@@ -226,10 +226,21 @@ interface HomeStat {
                 {{ t().blogLink }}
               </a>
 
+              <!-- Zebron administrators only: straight to the admin dashboard -->
+              @if (isAdmin()) {
+                <a
+                  routerLink="/admin"
+                  class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-amber-300/50 bg-amber-300/10 px-4 py-1.5 text-sm font-bold text-amber-100 transition hover:bg-amber-300/20"
+                >
+                  <mat-icon aria-hidden="true" class="!m-0 !h-5 !w-5 !text-[18px]">admin_panel_settings</mat-icon>
+                  {{ t().adminLink }}
+                </a>
+              }
+
               <a
                 routerLink="/donate"
                 class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[#65CFCF]/50 bg-[#65CFCF]/10 px-4 py-1.5 text-sm font-bold text-[#B9F0ED] transition hover:bg-[#65CFCF]/20"
-                [class.col-span-2]="!signedOut()"
+                [class.col-span-2]="!signedOut() && !isAdmin()"
               >
                 {{ t().donate }}
               </a>
@@ -777,6 +788,8 @@ export class HomeComponent {
 
   /** Show Create account / Sign in only to visitors who aren't signed in. */
   protected readonly signedOut = computed(() => !this.auth.isLoading() && !this.auth.firebaseUser());
+  /** Zebron administrator (AuthService.isAdmin): shows the Admin button. The admin pages check again. */
+  protected readonly isAdmin = computed(() => !this.auth.isLoading() && !!this.auth.firebaseUser() && this.auth.isAdmin);
 
   /** Page text in the selected language (English fallback). */
   protected readonly t = computed(() => homeText(this.localization.language()));
