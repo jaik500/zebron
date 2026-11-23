@@ -41,7 +41,9 @@ export type CourseTab = 'learning' | 'catalog' | 'careers' | 'certifications' | 
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [NgClass, NgTemplateOutlet, RouterLink, MatFormFieldModule, MatIconModule, MatInputModule, MatMenuModule, TranslatePipe],
   template: `
-    <header class="bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white">
+    <!-- The ::before strip carries the header colours upward, so the space above it (seen when
+         the page is pulled down on a phone, under the fixed top bar) is the header's colour, not the page's. -->
+    <header class="relative bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white before:pointer-events-none before:absolute before:inset-x-0 before:bottom-full before:h-[100vh] before:bg-gradient-to-r before:from-[#007979] before:via-[#00706f] before:to-[#2a835f] before:content-['']">
       <div class="mx-auto max-w-7xl px-4 sm:px-2 lg:px-8" [ngClass]="showTabs() ? 'pt-3' : 'py-2'">
         <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
           @if (backLink()) {

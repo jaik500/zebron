@@ -26,6 +26,7 @@ import { AuthService } from './core/services/auth.service';
 import { SupportAssistantComponent } from './features/support/assistant/support-assistant.component';
 import { AppStatusComponent } from './shared/components/app-status/app-status.component';
 import { AppNavBarComponent } from './shared/components/app-nav-bar/app-nav-bar.component';
+import { PullToRefreshComponent } from './shared/components/pull-to-refresh/pull-to-refresh.component';
 import { OrganizationBrandingService } from './features/partner/branding/organization-branding';
 
 @Component({
@@ -38,6 +39,7 @@ import { OrganizationBrandingService } from './features/partner/branding/organiz
     SupportAssistantComponent,
     AppStatusComponent,
     AppNavBarComponent,
+    PullToRefreshComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -84,6 +86,9 @@ import { OrganizationBrandingService } from './features/partner/branding/organiz
 
       <!-- Installed app on phones and tablets: Back, Forward, Home, Refresh and ⋯ at the bottom while scrolling. -->
       <app-nav-bar />
+
+      <!-- Installed app: pull the page down at the top to refresh (browsers do this themselves). -->
+      <app-pull-to-refresh />
 
     </div>
   `,

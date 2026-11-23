@@ -206,4 +206,8 @@ export const FR_COMMON: Readonly<Record<string, string>> = {
   // Installed app: navigation bar at the bottom (app-nav-bar)
   'App navigation': "Navigation de l'application",
   'Home': 'Accueil',
+  // Installed app: pull to refresh
+  'Refreshing...': 'Actualisation...',
+  'Release to refresh': 'Relâchez pour actualiser',
+  'Pull down to refresh': 'Tirez vers le bas pour actualiser',
 };
