@@ -99,7 +99,7 @@ export const NAV_BAR_HIDE_MS = 5000;
     /* Edge to edge and down to the bottom of the screen, like the top bar; the
        buttons stay above the iPhone home bar (safe area). */
     .zb-app-nav {
-      height: calc(40px + env(safe-area-inset-bottom, 0px));
+      height: calc(56px + env(safe-area-inset-bottom, 0px));
       padding-bottom: env(safe-area-inset-bottom, 0px);
     }
     .zb-app-nav--hidden {
@@ -107,9 +107,9 @@ export const NAV_BAR_HIDE_MS = 5000;
       pointer-events: none;
     }
     .zb-app-nav__button {
-      display: inline-flex; height: 40px; width: 52px; align-items: center; justify-content: center; border-radius: 12px;
+      display: inline-flex; height: 56px; width: 56px; align-items: center; justify-content: center; border-radius: 12px;
     }
-    .zb-app-nav__button .mat-icon { height: 24px; width: 24px; font-size: 24px; }
+    .zb-app-nav__button .mat-icon { height: 28px; width: 28px; font-size: 28px; }
     .zb-app-nav__button:active:not(:disabled) { background: rgb(255 255 255 / 0.12); }
     .zb-app-nav__button:disabled { opacity: 0.35; }
     .zb-app-nav__button:focus-visible { outline: 2px solid rgb(255 255 255 / 0.7); outline-offset: -2px; }
@@ -133,7 +133,7 @@ export class AppNavBarComponent {
     // Lift floating buttons above the bar while it shows (phones and tablets only).
     effect(() => {
       const lift = this.shown() && window.matchMedia('(max-width: 1023.98px)').matches;
-      document.documentElement.style.setProperty('--zb-app-nav-offset', lift ? 'calc(40px + env(safe-area-inset-bottom, 0px))' : '0px');
+      document.documentElement.style.setProperty('--zb-app-nav-offset', lift ? 'calc(56px + env(safe-area-inset-bottom, 0px))' : '0px');
     });
 
     afterNextRender(() => {

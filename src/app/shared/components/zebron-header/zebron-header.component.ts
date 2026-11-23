@@ -337,6 +337,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
                  REFRESH (installed app only: it has no browser reload button)
                  ================================================= -->
 
+            <!-- Installed app: refresh. Computers only; on phones and tablets the bottom bar has Refresh. -->
             @if (pwa.standalone()) {
               <button
                 mat-icon-button
@@ -344,6 +345,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
                 [matTooltip]="'Refresh' | t"
                 [attr.aria-label]="'Refresh' | t"
                 class="
+                  max-lg:!hidden
                   !h-10
                   !w-10
                   !shrink-0
