@@ -1,0 +1,35 @@
+{
+  "_about": "Providers that were researched for the Resources directory but not added, so nobody researches them again without a reason. Shown in docs/RESOURCES-REGISTRY.md. Add an entry whenever a candidate is dropped; remove it once the provider is added.",
+  "leftOut": [
+    {
+      "name": "Literacy Council of Montgomery County",
+      "area": "Montgomery County, MD",
+      "reason": "Its old web address (literacycouncilmcmd.org) now shows unrelated spam content; no current official page found.",
+      "checked": "2026-11-23"
+    },
+    {
+      "name": "Fairfax County Coordinated Services Planning (CSP)",
+      "area": "Fairfax County, VA",
+      "reason": "Official county page could not be loaded to confirm phone and hours.",
+      "checked": "2026-11-23"
+    },
+    {
+      "name": "Virginia Career Works: Prince William Center",
+      "area": "Prince William County, VA",
+      "reason": "Address and phone found only on third-party sites, not on an official page.",
+      "checked": "2026-11-23"
+    },
+    {
+      "name": "Greater Baden Medical Services (Prince George's County centers)",
+      "area": "Prince George's County, MD",
+      "reason": "Its website lists only Southern Maryland (Charles and St. Mary's) centers, so no Prince George's site could be confirmed.",
+      "checked": "2026-11-23"
+    },
+    {
+      "name": "Latino Economic Development Center (LEDC)",
+      "area": "DC and Maryland",
+      "reason": "Website did not load to confirm offices and phone.",
+      "checked": "2026-11-23"
+    }
+  ]
+}

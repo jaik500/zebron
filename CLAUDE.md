@@ -23,6 +23,17 @@ conventions, how to build and deploy, how we work together, and the open
 issues. When a change makes anything in it wrong, update it in the same
 change.
 
+**Resources directory (/resources):** before adding any resource listing,
+read `docs/RESOURCES-REGISTRY.md` (refresh it first with
+`node scripts/export-resources-registry.mjs`) and search it for the
+provider's name, website and phone; also check its **Checked and left out**
+list. Add listings as a new batch script `scripts/seed-resources-<area>-<n>.mjs`
+that calls `seedResources()` from `scripts/lib/seed-resources.mjs`; the engine
+refuses listings whose name or website already exists. Verify every detail on
+an official page (provider or government), give `sourceUrl`, and record
+dropped candidates in `scripts/resources-left-out.json`. After loading, run
+the export again so the registry stays current.
+
 ## Every change updates the knowledge articles
 
 The help assistant (Ask for help) answers from the Knowledge Center, and the

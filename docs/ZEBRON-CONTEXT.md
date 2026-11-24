@@ -4,7 +4,7 @@ Give this file to an AI assistant (or a new developer) at the start of any
 work on Zebron. It explains what Zebron is, how it is built, where things
 live, the rules every change follows, and how we work together.
 
-- **Last updated:** 23 November 2026 (guide edition 143)
+- **Last updated:** 23 November 2026 (guide edition 145)
 - **Also in the Knowledge Center** as "Zebron platform overview for the team" (support and developers), and introduced on the Internal Blog in "How Zebron works: one page for the whole team" (`scripts/seed-blog-zebron-context.mjs`).
 - **Keep it current:** when a change makes anything here wrong (a new
   application, folder, collection, function, rule or way of working), update
@@ -85,8 +85,11 @@ tests/
   unit/                     Vitest unit tests
   integration/              function tests
   firestore/                security rules tests (need the emulator)
-scripts/                    content seed scripts (programs, courses, question banks, blog)
-docs/                       architecture notes, runbooks, this file
+scripts/                    content seed scripts (programs, courses, question banks, blog,
+                            resources: seed-resources-*.mjs with scripts/lib/seed-resources.mjs;
+                            export-resources-registry.mjs writes docs/RESOURCES-REGISTRY.md)
+docs/                       architecture notes, runbooks, this file,
+                            RESOURCES-REGISTRY.md (every resource listing; check before adding)
 firestore.rules             Firestore security rules: edit this one (readable, with comments)
 firestore.deploy.rules      generated compact copy that is deployed (npm run rules:build)
 storage.rules               Storage security rules
