@@ -24,6 +24,10 @@ export const NAV_BAR_HIDE_MS = 5000;
  *   scrolling stops. Touching or focusing the bar, or an open menu, keeps it.
  * - Stays hidden while a text field has focus (the on-screen keyboard is up).
  * - Runs edge to edge along the bottom of the screen (like the top bar).
+ * - Light frosted glass: mostly see-through (about 35% opaque) with a blur and
+ *   two faint cloud patches, dark icons with labels, Home in a teal pill.
+ *   Nearly solid where the blur isn't supported or the person asked for
+ *   reduced transparency, so the icons stay readable.
  * - While it shows, --zb-app-nav-offset on <html> is its height, so
  *   floating buttons (the Help assistant) move up out of its way.
  */
@@ -34,7 +38,7 @@ export const NAV_BAR_HIDE_MS = 5000;
   template: `
     @if (pwa.standalone()) {
       <nav
-        class="zb-app-nav fixed inset-x-0 bottom-0 z-40 flex items-start justify-around bg-[#0b3443] text-white shadow-[0_-2px_10px_rgb(0_0_0/0.2)] transition-transform duration-300 ease-out motion-reduce:transition-none lg:hidden"
+        class="zb-app-nav fixed inset-x-0 bottom-0 z-40 flex items-start justify-around transition-transform duration-300 ease-out motion-reduce:transition-none lg:hidden"
         [class.zb-app-nav--hidden]="!shown()"
         [attr.aria-label]="'App navigation' | t"
         [attr.aria-hidden]="shown() ? null : 'true'"
@@ -43,15 +47,19 @@ export const NAV_BAR_HIDE_MS = 5000;
       >
         <button type="button" class="zb-app-nav__button" [disabled]="!back.canGoBack()" [attr.tabindex]="shown() ? null : -1" (click)="goBack()" [attr.aria-label]="'Back' | t" [title]="'Back' | t">
           <mat-icon aria-hidden="true">chevron_left</mat-icon>
+          <span class="zb-app-nav__label" aria-hidden="true">{{ 'Back' | t }}</span>
         </button>
         <button type="button" class="zb-app-nav__button" [disabled]="!back.canGoForward()" [attr.tabindex]="shown() ? null : -1" (click)="goForward()" [attr.aria-label]="'Forward' | t" [title]="'Forward' | t">
           <mat-icon aria-hidden="true">chevron_right</mat-icon>
+          <span class="zb-app-nav__label" aria-hidden="true">{{ 'Forward' | t }}</span>
         </button>
-        <button type="button" class="zb-app-nav__button" [attr.tabindex]="shown() ? null : -1" (click)="goHome()" [attr.aria-label]="'Home' | t" [title]="'Home' | t">
-          <mat-icon aria-hidden="true">home</mat-icon>
+        <button type="button" class="zb-app-nav__button zb-app-nav__button--home" [attr.tabindex]="shown() ? null : -1" (click)="goHome()" [attr.aria-label]="'Home' | t" [title]="'Home' | t">
+          <span class="zb-app-nav__pill"><mat-icon aria-hidden="true">home</mat-icon></span>
+          <span class="zb-app-nav__label" aria-hidden="true">{{ 'Home' | t }}</span>
         </button>
         <button type="button" class="zb-app-nav__button" [attr.tabindex]="shown() ? null : -1" (click)="refresh()" [attr.aria-label]="'Refresh' | t" [title]="'Refresh' | t">
           <mat-icon aria-hidden="true">refresh</mat-icon>
+          <span class="zb-app-nav__label" aria-hidden="true">{{ 'Refresh' | t }}</span>
         </button>
         <button
           type="button"
@@ -64,6 +72,7 @@ export const NAV_BAR_HIDE_MS = 5000;
           [title]="'More' | t"
         >
           <mat-icon aria-hidden="true">more_horiz</mat-icon>
+          <span class="zb-app-nav__label" aria-hidden="true">{{ 'More' | t }}</span>
         </button>
       </nav>
 
@@ -110,22 +119,43 @@ export const NAV_BAR_HIDE_MS = 5000;
   `,
   styles: `
     /* Edge to edge and down to the bottom of the screen, like the top bar; the
-       buttons stay above the iPhone home bar (safe area). */
+       buttons stay above the iPhone home bar (safe area). Light frosted glass:
+       about 35% opaque so the page shows through, blurred so icons stay legible. */
     .zb-app-nav {
-      height: calc(56px + env(safe-area-inset-bottom, 0px));
-      padding-bottom: env(safe-area-inset-bottom, 0px);
+      height: calc(76px + env(safe-area-inset-bottom, 0px));
+      padding: 6px 0 env(safe-area-inset-bottom, 0px);
+      color: #0b3b48;
+      background:
+        radial-gradient(40% 70% at 22% 40%, rgb(255 255 255 / 0.3), transparent 70%),
+        radial-gradient(45% 75% at 74% 60%, rgb(255 255 255 / 0.25), transparent 70%),
+        rgb(232 244 244 / 0.35);
+      -webkit-backdrop-filter: blur(18px) saturate(1.5);
+      backdrop-filter: blur(18px) saturate(1.5);
+      border-top: 1px solid rgb(255 255 255 / 0.55);
+    }
+    /* No blur, or the person asked for less transparency: nearly solid. */
+    @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+      .zb-app-nav { background: rgb(232 244 244 / 0.96); }
+    }
+    @media (prefers-reduced-transparency: reduce) {
+      .zb-app-nav { background: rgb(232 244 244 / 0.96); }
     }
     .zb-app-nav--hidden {
       transform: translateY(100%);
       pointer-events: none;
     }
     .zb-app-nav__button {
-      display: inline-flex; height: 56px; width: 56px; align-items: center; justify-content: center; border-radius: 12px;
+      display: inline-flex; flex-direction: column; gap: 3px; height: 64px; min-width: 60px; padding: 0 4px;
+      align-items: center; justify-content: center; border-radius: 14px;
+      text-shadow: 0 0 6px rgb(255 255 255 / 0.8);
     }
-    .zb-app-nav__button .mat-icon { height: 28px; width: 28px; font-size: 28px; }
-    .zb-app-nav__button:active:not(:disabled) { background: rgb(255 255 255 / 0.12); }
+    .zb-app-nav__button .mat-icon { height: 26px; width: 26px; font-size: 26px; }
+    .zb-app-nav__label { font-size: 11px; font-weight: 600; line-height: 1; }
+    .zb-app-nav__pill { display: inline-flex; align-items: center; justify-content: center; padding: 1px 14px; border-radius: 9999px; background: rgb(0 121 121 / 0.16); }
+    .zb-app-nav__button--home { color: #007979; }
+    .zb-app-nav__button:active:not(:disabled) { background: rgb(0 121 121 / 0.12); }
     .zb-app-nav__button:disabled { opacity: 0.35; }
-    .zb-app-nav__button:focus-visible { outline: 2px solid rgb(255 255 255 / 0.7); outline-offset: -2px; }
+    .zb-app-nav__button:focus-visible { outline: 2px solid #007979; outline-offset: -2px; }
   `,
 })
 export class AppNavBarComponent {
@@ -147,7 +177,7 @@ export class AppNavBarComponent {
     // Lift floating buttons above the bar while it shows (phones and tablets only).
     effect(() => {
       const lift = this.shown() && window.matchMedia('(max-width: 1023.98px)').matches;
-      document.documentElement.style.setProperty('--zb-app-nav-offset', lift ? 'calc(56px + env(safe-area-inset-bottom, 0px))' : '0px');
+      document.documentElement.style.setProperty('--zb-app-nav-offset', lift ? 'calc(76px + env(safe-area-inset-bottom, 0px))' : '0px');
     });
 
     afterNextRender(() => {
