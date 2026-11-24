@@ -13,15 +13,14 @@ import { PwaService } from '../../../core/services/pwa.service';
 export const NAV_BAR_HIDE_MS = 5000;
 
 /**
- * Navigation bar for the installed app on phones and tablets: Back, Forward,
- * Home, Refresh and a ⋯ menu (language, and installing the app where that is
- * possible). The installed app has no browser buttons, so this replaces them.
+ * Navigation bar for phones and tablets: Back, Forward, Home, Refresh and a ⋯
+ * menu (language, and installing the app where that is possible).
  *
- * - Only in the installed app (PwaService.standalone) and below `lg`; in a
- *   browser the browser's own buttons are used, on computers the top bar's
- *   back arrow.
- * - Slides up when the page scrolls and slides away NAV_BAR_HIDE_MS after
- *   scrolling stops. Touching or focusing the bar, or an open menu, keeps it.
+ * - Below `lg`, in the installed app and in phone and tablet browsers alike;
+ *   on computers the top bar's back arrow is used instead.
+ * - Slides up whenever anything scrolls, up or down (the page or a scrolling
+ *   panel inside it: the scroll listener is on the document, in the capture
+ *   phase), and slides away NAV_BAR_HIDE_MS after scrolling stops. Touching or focusing the bar, or an open menu, keeps it.
  * - Stays hidden while a text field has focus (the on-screen keyboard is up).
  * - Runs edge to edge along the bottom of the screen (like the top bar).
  * - Light frosted glass: mostly see-through (about 35% opaque) with a blur and
@@ -36,7 +35,6 @@ export const NAV_BAR_HIDE_MS = 5000;
   imports: [MatIconModule, MatMenuModule, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    @if (pwa.standalone()) {
       <nav
         class="zb-app-nav fixed inset-x-0 bottom-0 z-40 flex items-start justify-around transition-transform duration-300 ease-out motion-reduce:transition-none lg:hidden"
         [class.zb-app-nav--hidden]="!shown()"
@@ -115,7 +113,6 @@ export const NAV_BAR_HIDE_MS = 5000;
           </div>
         }
       </mat-menu>
-    }
   `,
   styles: `
     /* Edge to edge and down to the bottom of the screen, like the top bar; the
@@ -181,11 +178,13 @@ export class AppNavBarComponent {
     });
 
     afterNextRender(() => {
-      window.addEventListener('scroll', this.onScroll, { passive: true });
+      // Capture phase: scroll events don't bubble, so this also catches
+      // scrolling inside panels, not only the page.
+      document.addEventListener('scroll', this.onScroll, { passive: true, capture: true });
       document.addEventListener('focusin', this.onFocusChange);
     });
     destroyRef.onDestroy(() => {
-      window.removeEventListener('scroll', this.onScroll);
+      document.removeEventListener('scroll', this.onScroll, { capture: true });
       document.removeEventListener('focusin', this.onFocusChange);
       this.clearTimer();
       document.documentElement.style.removeProperty('--zb-app-nav-offset');
@@ -193,7 +192,7 @@ export class AppNavBarComponent {
   }
 
   private readonly onScroll = (): void => {
-    if (!this.pwa.standalone() || typingInField()) return;
+    if (typingInField()) return;
     this.show();
   };
 
