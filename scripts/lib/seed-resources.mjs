@@ -9,6 +9,10 @@
  * --overwrite). A listing whose name or website matches another listing is
  * refused unless --allow-duplicates. A shared phone number only prints a note.
  *
+ * Bootcamps: a listing with topic "bootcamps" and a programs array also gets
+ * bootcamps/{resourceId} with its programs (the /bootcamps page). Programs are
+ * only written when that bootcamp has none yet, or with --overwrite.
+ *
  * The list of what is already in the directory is docs/RESOURCES-REGISTRY.md,
  * refreshed with: node scripts/export-resources-registry.mjs
  */
@@ -76,6 +80,7 @@ export const CATEGORIES = {
   business: { slug: "small-business", name: "Small business", description: "Free advising and help starting or growing a business.", icon: "storefront" },
   government: { slug: "government-and-public-services", name: "Government and public services", description: "211 helplines and public benefit offices.", icon: "account_balance" },
   reentry: { slug: "re-entry", name: "Re-entry", description: "Support after incarceration.", icon: "door_open" },
+  bootcamps: { slug: "tech-bootcamps", name: "Tech Bootcamps", description: "Coding, cybersecurity, cloud and IT training programs.", icon: "school" },
 };
 
 // ============================================================
@@ -171,6 +176,13 @@ export function buildIndex(docs) {
   return index;
 }
 
+/** Document ids of the listings that block an item (same name or website). */
+export function blockingIds(index, item) {
+  const others = (list) => (list ?? []).filter((entry) => entry.slug !== item.slug);
+  const ids = [...others(index.name.get(normalName(item.name))), ...others(index.url.get(normalUrl(item.website)))].map((entry) => entry.id);
+  return [...new Set(ids)];
+}
+
 export function findDuplicates(index, item) {
   const others = (list) => (list ?? []).filter((entry) => entry.slug !== item.slug);
   const byName = others(index.name.get(normalName(item.name)));
@@ -217,6 +229,10 @@ export async function seedResources({ resources, label }) {
     if (!TYPES[item.type]) throw new Error(`${item.slug}: unknown type ${item.type}`);
     for (const key of ["website", "applyUrl", "sourceUrl"]) {
       if (item[key] && !/^https:\/\/\S+\.\S+/.test(item[key])) throw new Error(`${item.slug}: ${key} must start with https://`);
+    }
+    for (const program of item.programs ?? []) {
+      if (!program.id || !program.title || !program.field) throw new Error(`${item.slug}: every program needs id, title and field`);
+      if (program.applyUrl && !/^https:\/\//.test(program.applyUrl)) throw new Error(`${item.slug}/${program.id}: applyUrl must start with https://`);
     }
     for (const [kind, key] of [["slug", item.slug], ["name", normalName(item.name)], ["url", normalUrl(item.website)]]) {
       if (!key) continue;
@@ -325,6 +341,25 @@ export async function seedResources({ resources, label }) {
     return id;
   }
 
+  // ---------- bootcamp programs ----------
+  const PROGRAM_DEFAULTS = {
+    summary: "", format: "in-person", schedule: "part-time", durationWeeks: null, hoursPerWeek: null, tuition: null,
+    financing: [], costNote: "", prerequisites: "", requiresDegree: false, englishSupport: false, workAuthorization: "",
+    certifications: [], skills: [], placementRate: null, outcomesSource: "", applyUrl: "", starts: [], recommended: false, zebronTake: "",
+  };
+  async function writePrograms(item, resourceId, { replace }) {
+    if (!item.programs?.length) return;
+    const ref = db.collection("bootcamps").doc(resourceId);
+    const existing = await ref.get();
+    if (existing.exists && (existing.get("programs") ?? []).length && !replace) {
+      console.log(`  programs  keep    ${item.slug}: already has ${(existing.get("programs") ?? []).length} program(s) (use --overwrite to replace)`);
+      return;
+    }
+    const programs = item.programs.map((program) => ({ ...PROGRAM_DEFAULTS, ...program }));
+    console.log(`  programs  ${existing.exists ? "replace" : "add    "} ${item.slug}: ${programs.map((program) => program.title).join("; ")}`);
+    if (APPLY) await ref.set({ resourceId, programs, updatedBy: AUTHOR, updatedAt: FieldValue.serverTimestamp() });
+  }
+
   // ---------- run ----------
   console.log(
     RETYPE
@@ -362,6 +397,7 @@ export async function seedResources({ resources, label }) {
     if (current && !OVERWRITE) {
       counts.skip++;
       console.log(`  skip      ${item.slug} (already exists; use --overwrite to replace)`);
+      await writePrograms(item, current.id, { replace: false });
       continue;
     }
 
@@ -369,6 +405,9 @@ export async function seedResources({ resources, label }) {
     if (blocking.length && !ALLOW_DUPLICATES) {
       counts.duplicate++;
       console.log(`  DUPLICATE ${item.slug}: already listed as ${blocking.join("; ")}. Not added (use --allow-duplicates if it really is different).`);
+      if (item.programs?.length && blocking.length === 1) {
+        await writePrograms(item, blockingIds(index, item)[0], { replace: false });
+      }
       continue;
     }
     for (const warning of warnings) console.log(`  note      ${item.slug}: same phone as ${warning}`);
@@ -410,10 +449,11 @@ export async function seedResources({ resources, label }) {
     counts[current ? "replace" : "create"]++;
     console.log(`  ${current ? "replace" : "create "}   ${item.slug}  [${CATEGORIES[item.topic].name}, ${TYPES[item.type].name}]`);
 
+    const ref = current ? current.ref : db.collection("resources").doc();
     if (APPLY) {
-      const ref = current ? current.ref : db.collection("resources").doc();
       await ref.set(data, { merge: !!current });
     }
+    await writePrograms(item, ref.id, { replace: OVERWRITE });
   }
 
   console.log(

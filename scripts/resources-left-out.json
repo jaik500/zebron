@@ -30,6 +30,12 @@
       "area": "DC and Maryland",
       "reason": "Website did not load to confirm offices and phone.",
       "checked": "2026-11-23"
+    },
+    {
+      "name": "Byte Back",
+      "area": "Washington, DC and Baltimore",
+      "reason": "Its website could not be read and no current program details, dates or eligibility were found on an official page; older pages describe free CompTIA A+ and digital literacy classes.",
+      "checked": "2026-11-23"
     }
   ]
 }
