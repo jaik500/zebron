@@ -1187,13 +1187,33 @@ function hoursFrom(availability: Resource['availability']): Record<DayKey, DayHo
                         <span [class]="option.key === 'reported' && option.count ? 'rounded-full bg-red-100 px-1.5 text-red-700' : option.key === 'due' && option.count ? 'rounded-full bg-amber-100 px-1.5 text-amber-800' : 'opacity-70'">{{ option.count }}</span>
                       </button>
                     }
+
+                    <!-- Status filter -->
+                    <mat-form-field appearance="outline" class="zb-field zb-field--flush ml-auto w-44" subscriptSizing="dynamic">
+                      <mat-label>Status</mat-label>
+                      <mat-select
+                        id="resource-status-filter"
+                        [value]="statusFilter()"
+                        (selectionChange)="statusFilter.set($event.value)"
+                        aria-label="Filter resources by status"
+                      >
+                        <mat-option value="all">All statuses ({{ resources().length }})</mat-option>
+                        @for (status of resourceStatuses; track status) {
+                          <mat-option [value]="status">{{ formatLabel(status) }} ({{ statusCounts()[status] }})</mat-option>
+                        }
+                      </mat-select>
+                    </mat-form-field>
                   </div>
                 }
 
                 <!-- Resource list -->
                 @if (resources().length > 0 && filteredResources().length === 0) {
                   <p class="p-6 text-center text-sm text-gray-500">
-                    {{ attentionFilter() === 'due' ? 'Nothing is due for review.' : attentionFilter() === 'reported' ? 'No open problem reports.' : 'No resources match your search.' }}
+                    {{ statusFilter() !== 'all' && !searchTerm().trim() && attentionFilter() === 'all'
+                      ? 'No ' + formatLabel(statusFilter()).toLowerCase() + ' resources.'
+                      : attentionFilter() === 'due' ? 'Nothing is due for review' + (statusFilter() !== 'all' ? ' with this status.' : '.')
+                      : attentionFilter() === 'reported' ? 'No open problem reports' + (statusFilter() !== 'all' ? ' with this status.' : '.')
+                      : 'No resources match your search' + (statusFilter() !== 'all' ? ' and status.' : '.') }}
                   </p>
                 }
 
@@ -1468,7 +1488,7 @@ export class ResourceAdminComponent implements OnInit {
   protected readonly searchTerm = this.viewState.search;
 
   /**
-   * Existing resources filtered by the search field.
+   * Existing resources filtered by status, the attention filter and the search field.
    *
    * Searches across the resource name, slug,
    * description, and website.
@@ -1476,10 +1496,14 @@ export class ResourceAdminComponent implements OnInit {
   protected readonly filteredResources = computed(() => {
     const search = this.searchTerm().trim().toLowerCase();
     const attention = this.attentionFilter();
+    const status = this.statusFilter();
     const reports = this.reportCounts();
-    const pool = attention === 'all'
+    const byStatus = status === 'all'
       ? this.resources()
-      : this.resources().filter((resource) =>
+      : this.resources().filter((resource) => resource.status === status);
+    const pool = attention === 'all'
+      ? byStatus
+      : byStatus.filter((resource) =>
           attention === 'reported'
             ? reports.has(resource.id)
             : resource.status === 'published' && this.reviewOf(resource).due,
@@ -1592,6 +1616,18 @@ export class ResourceAdminComponent implements OnInit {
 
   /** List filter: everything, due for review, or with open reports. */
   protected readonly attentionFilter = signal<'all' | 'due' | 'reported'>('all');
+
+  /** List filter: one status (draft, pending, published, archived) or all. Combines with the filter above and search. */
+  protected readonly statusFilter = signal<ResourceStatus | 'all'>('all');
+
+  /** How many resources have each status, for the status filter's options. */
+  protected readonly statusCounts = computed(() => {
+    const counts = Object.fromEntries(this.resourceStatuses.map((status) => [status, 0])) as Record<ResourceStatus, number>;
+    for (const resource of this.resources()) {
+      if (resource.status in counts) counts[resource.status]++;
+    }
+    return counts;
+  });
 
   protected readonly dueCount = computed(
     () => this.resources().filter((resource) => resource.status === 'published' && this.reviewOf(resource).due).length,
