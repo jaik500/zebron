@@ -36,6 +36,54 @@
       "area": "Washington, DC and Baltimore",
       "reason": "Its website could not be read and no current program details, dates or eligibility were found on an official page; older pages describe free CompTIA A+ and digital literacy classes.",
       "checked": "2026-11-23"
+    },
+    {
+      "name": "Generation USA (Generation JobSprint)",
+      "area": "Online; DC-area applicants prioritized",
+      "reason": "Not a tech bootcamp: its only open program is JobSprint, a free 3-week online job-search course with no start dates published. Its former free IT Support Specialist program is no longer listed. Could fit Employment once dates are published.",
+      "checked": "2026-11-23"
+    },
+    {
+      "name": "ChooseU (formerly Generation USA)",
+      "area": "Guilford County, NC; Dallas-Fort Worth, TX",
+      "reason": "Independent of Generation since 2024; runs manufacturing technician pathways, not tech training, and nothing in DC, Maryland or Virginia.",
+      "checked": "2026-11-23"
+    },
+    {
+      "name": "mthree (Wiley Edge) Graduate Programme",
+      "area": "U.S. (New York office)",
+      "reason": "Hire-train-deploy program, but its U.S. careers page doesn't state training length, pay, commitment, relocation or eligibility.",
+      "checked": "2026-11-23"
+    },
+    {
+      "name": "SkillStorm",
+      "area": "U.S.",
+      "reason": "Hire-train-deploy program for emerging engineers, but its careers page doesn't state whether training is paid, its length, the commitment or locations.",
+      "checked": "2026-11-23"
+    },
+    {
+      "name": "Genesis10 Dev10",
+      "area": "U.S.",
+      "reason": "Hire-train-deploy program (reported two-year client commitments), but its website could not be read to confirm terms.",
+      "checked": "2026-11-23"
+    },
+    {
+      "name": "Montgomery College TechMAP",
+      "area": "Montgomery County, MD",
+      "reason": "Its page says it is no longer accepting applicants; Montgomery College's Cyber Workforce Accelerator is listed instead.",
+      "checked": "2026-11-23"
+    },
+    {
+      "name": "Apprenticeship DC (DC Department of Employment Services)",
+      "area": "Washington, DC",
+      "reason": "A directory of registered apprenticeship sponsors, not a training program with its own application; individual sponsors would need checking one by one.",
+      "checked": "2026-11-23"
+    },
+    {
+      "name": "Maryland Workforce Association: Cybersecurity Support Technician Registered Apprenticeship",
+      "area": "Maryland",
+      "reason": "Found only in news coverage; no official page with how to apply.",
+      "checked": "2026-11-23"
     }
   ]
 }
