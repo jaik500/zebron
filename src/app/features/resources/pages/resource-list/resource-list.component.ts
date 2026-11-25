@@ -63,8 +63,8 @@ const EMPTY: DirectoryFilters = { q: '', topic: '', category: '', near: '', type
             <div class="absolute -bottom-40 right-1/4 h-96 w-96 rounded-full border-[56px] border-white/5"></div>
           </div>
 
-          <div class="relative mx-auto flex min-h-[380px] max-w-6xl items-center px-4 py-10 sm:min-h-[440px] sm:px-6 lg:px-8">
-            <div class="w-full max-w-2xl rounded-2xl bg-[#032D42]/95 p-6 text-white shadow-2xl shadow-black/30 sm:p-8">
+          <div class="relative mx-auto flex min-h-[380px] max-w-6xl items-center px-2 py-8 sm:min-h-[440px] sm:px-6 lg:px-8">
+            <div class="w-full max-w-2xl rounded-2xl bg-[#032D42]/95 p-4 text-white shadow-2xl shadow-black/30 sm:p-8">
               <h1 class="text-3xl font-extrabold tracking-tight sm:text-4xl">What do you need help with?</h1>
               <p class="mt-3 text-lg text-white/85">Search services, programs and places near you</p>
 
@@ -75,7 +75,7 @@ const EMPTY: DirectoryFilters = { q: '', topic: '', category: '', near: '', type
                     #heroQuery
                     type="search"
                     placeholder="Search services or programs"
-                    class="h-11 w-full rounded-lg border-0 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#12BFC3]"
+                    class="h-11 w-full min-w-0 rounded-lg border-0 bg-white px-3 text-base text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#12BFC3]"
                   />
                 </label>
                 <app-location-picker
@@ -106,11 +106,11 @@ const EMPTY: DirectoryFilters = { q: '', topic: '', category: '', near: '', type
 
         <!-- ===================== Search by category ===================== -->
         <section class="bg-white" aria-labelledby="needs-title">
-          <div class="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
+          <div class="mx-auto max-w-6xl px-2 py-8 sm:px-6 sm:py-12 lg:px-8">
             <h2 id="needs-title" class="text-3xl font-bold tracking-tight text-[#032D42]">Search by Category</h2>
             <p class="mt-2 text-sm text-gray-600 sm:text-base">Find resources near you, with hours, costs and how to reach them.</p>
 
-            <ul class="mt-8 grid grid-cols-2 gap-x-6 gap-y-7 md:grid-cols-3 lg:grid-cols-4">
+            <ul class="mt-6 grid grid-cols-2 gap-x-3 gap-y-6 sm:mt-8 sm:gap-x-6 sm:gap-y-7 md:grid-cols-3 lg:grid-cols-4">
               @for (need of needs(); track need.need.key) {
                 <li>
                   <a [routerLink]="need.link" [queryParams]="need.query" class="group block focus:outline-none">
@@ -140,13 +140,13 @@ const EMPTY: DirectoryFilters = { q: '', topic: '', category: '', near: '', type
         <!-- Featured -->
         @if (featured().length) {
           <section class="bg-white" aria-labelledby="featured-title">
-            <div class="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+            <div class="mx-auto max-w-6xl px-2 py-8 sm:px-6 sm:py-10 lg:px-8">
               <p class="text-sm font-bold uppercase tracking-wider text-[#007979]">Featured</p>
               <h2 id="featured-title" class="mt-1 text-2xl font-bold tracking-tight text-[#032D42]">Trusted places to start</h2>
               <p class="mt-1 text-sm text-gray-600">Verified by Zebron. Check hours and details before you go.</p>
-              <div class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div class="mt-5 grid min-w-0 grid-cols-1 gap-3 sm:mt-6 sm:grid-cols-2 lg:grid-cols-3">
                 @for (resource of featured(); track resource.id) {
-                  <app-resource-card
+                  <app-resource-card class="block min-w-0 max-w-full"
                     [resource]="resource"
                     [category]="categoryById().get(resource.categoryId)"
                     [place]="placeOf(resource)"
@@ -159,7 +159,7 @@ const EMPTY: DirectoryFilters = { q: '', topic: '', category: '', near: '', type
         }
 
         <!-- Can't find it -->
-        <section class="mx-auto grid max-w-6xl gap-4 px-4 py-10 sm:px-6 md:grid-cols-3 lg:px-8">
+        <section class="mx-auto grid max-w-6xl gap-3 px-2 py-8 sm:gap-4 sm:px-6 sm:py-10 md:grid-cols-3 lg:px-8">
           <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
             <mat-icon class="text-[#007979]" aria-hidden="true">support_agent</mat-icon>
             <h2 class="mt-2 text-base font-bold text-[#032D42]">Can't find what you need?</h2>
@@ -183,9 +183,9 @@ const EMPTY: DirectoryFilters = { q: '', topic: '', category: '', near: '', type
       } @else {
         <!-- ===================== Category / search results ===================== -->
         <header class="bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white">
-          <div class="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-2 sm:px-6 lg:flex-row lg:items-center lg:gap-4 lg:px-8">
+          <div class="mx-auto flex max-w-6xl flex-col gap-2 px-2 py-2 sm:px-6 lg:flex-row lg:items-center lg:gap-4 lg:px-8">
             <!-- Back, breadcrumb and title on one line -->
-            <div class="flex min-w-0 items-center gap-1 lg:w-[250px] lg:shrink-0">
+            <!-- <div class="flex min-w-0 items-center gap-1 lg:w-[250px] lg:shrink-0">
               <button
                 type="button"
                 (click)="backToTopics()"
@@ -196,7 +196,7 @@ const EMPTY: DirectoryFilters = { q: '', topic: '', category: '', near: '', type
                 <mat-icon class="!h-5 !w-5 !text-[20px]" aria-hidden="true">arrow_back</mat-icon>
               </button>
               <h1 class="min-w-0 truncate text-lg font-bold leading-tight" [attr.title]="heading().text || null">{{ heading().title }}</h1>
-            </div>
+            </div> -->
 
             <!-- Search within -->
             <form
@@ -212,7 +212,7 @@ const EMPTY: DirectoryFilters = { q: '', topic: '', category: '', near: '', type
                   [value]="filters().q"
                   (input)="set('q', $any($event.target).value)"
                   [placeholder]="currentNeed() ? 'Search within ' + currentNeed()!.title : 'Search services or programs'"
-                  class="h-9 w-full min-w-0 appearance-none border-0 bg-transparent p-0 text-sm !outline-none placeholder:text-gray-500 focus:ring-0"
+                  class="h-11 w-full min-w-0 appearance-none border-0 bg-transparent p-0 text-base !outline-none placeholder:text-gray-500 focus:ring-0"
                 />
               </label>
               <span class="h-6 w-px bg-gray-200" aria-hidden="true"></span>
@@ -227,11 +227,11 @@ const EMPTY: DirectoryFilters = { q: '', topic: '', category: '', near: '', type
           </div>
         </header>
 
-        <div class="mx-auto max-w-6xl px-4 py-5 sm:px-6 lg:px-8">
-          <div class="grid gap-6 lg:grid-cols-[250px_minmax(0,1fr)]">
+        <div class="mx-auto max-w-6xl px-2 py-4 sm:px-6 sm:py-5 lg:px-8">
+          <div class="grid min-w-0 gap-4 sm:gap-6 lg:grid-cols-[250px_minmax(0,1fr)]">
             <!-- ===================== Refine (sidebar on desktop, panel on phones) ===================== -->
             <aside class="lg:block" [class.hidden]="!filtersOpen()" id="resource-refine" aria-label="Refine results">
-              <div class="space-y-5 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm lg:sticky lg:top-20">
+              <div class="space-y-4 rounded-2xl border border-gray-200 bg-white p-3 shadow-sm sm:space-y-5 sm:p-4 lg:sticky lg:top-20">
                 <div>
                   <h2 class="text-sm font-bold text-[#032D42]">Show only</h2>
                   <div class="mt-2 space-y-1">
@@ -298,7 +298,7 @@ const EMPTY: DirectoryFilters = { q: '', topic: '', category: '', near: '', type
             </aside>
 
             <!-- ===================== Results ===================== -->
-            <section aria-labelledby="results-count" class="min-w-0">
+            <section aria-labelledby="results-count" class="min-w-0 max-w-full">
               <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <p id="results-count" class="text-sm text-gray-600" aria-live="polite">
                   @if (loading()) {
@@ -314,7 +314,7 @@ const EMPTY: DirectoryFilters = { q: '', topic: '', category: '', near: '', type
                 <button
                   type="button"
                   (click)="filtersOpen.set(!filtersOpen())"
-                  class="inline-flex h-9 items-center gap-1 rounded-lg border border-gray-300 bg-white px-3 text-sm font-semibold text-gray-700 lg:hidden"
+                  class="inline-flex min-h-11 items-center gap-1 rounded-lg border border-gray-300 bg-white px-3 text-sm font-semibold text-gray-700 lg:hidden"
                   [attr.aria-expanded]="filtersOpen()"
                   aria-controls="resource-refine"
                 >
@@ -331,14 +331,14 @@ const EMPTY: DirectoryFilters = { q: '', topic: '', category: '', near: '', type
                       type="button"
                       (click)="topicInfoOpen.set(!topicInfoOpen())"
                       [attr.aria-expanded]="topicInfoOpen()"
-                      class="flex w-full items-center gap-2 bg-[#E8F4F4] px-4 py-2.5 text-left"
+                      class="flex min-h-11 w-full items-center gap-2 bg-[#E8F4F4] px-3 py-2.5 text-left sm:px-4"
                     >
                       <mat-icon class="!h-5 !w-5 !text-[20px] !leading-none text-[#007979]" aria-hidden="true">info</mat-icon>
                       <h2 id="topic-info-title" class="flex-1 text-sm font-bold text-[#032D42]">About {{ topic.title.toLowerCase() }} help</h2>
                       <mat-icon class="!h-5 !w-5 !text-[20px] !leading-none text-gray-500 transition-transform {{ topicInfoOpen() ? 'rotate-180' : '' }}" aria-hidden="true">expand_more</mat-icon>
                     </button>
                     @if (topicInfoOpen()) {
-                      <div class="space-y-3 px-4 py-4">
+                      <div class="min-w-0 space-y-3 px-3 py-3 sm:px-4 sm:py-4">
                         @if (topic.intro) {
                           <p class="whitespace-pre-line text-sm leading-6 text-gray-700 [overflow-wrap:anywhere]">{{ topic.intro }}</p>
                         }
@@ -431,9 +431,9 @@ const EMPTY: DirectoryFilters = { q: '', topic: '', category: '', near: '', type
                   </div>
                 </div>
               } @else {
-                <div class="grid gap-3 sm:grid-cols-2">
+                <div class="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
                   @for (resource of visible(); track resource.id) {
-                    <app-resource-card
+                    <app-resource-card class="block min-w-0 max-w-full"
                       [resource]="resource"
                       [category]="categoryById().get(resource.categoryId)"
                       [place]="placeOf(resource)"
@@ -446,7 +446,7 @@ const EMPTY: DirectoryFilters = { q: '', topic: '', category: '', near: '', type
                     <button
                       type="button"
                       (click)="limit.set(limit() + pageSize)"
-                      class="inline-flex h-10 items-center gap-1 rounded-lg border border-gray-300 bg-white px-4 text-sm font-semibold text-[#032D42] hover:border-[#007979] hover:text-[#007979]"
+                      class="inline-flex min-h-11 items-center gap-1 rounded-lg border border-gray-300 bg-white px-4 text-sm font-semibold text-[#032D42] hover:border-[#007979] hover:text-[#007979]"
                     >
                       Show more ({{ results().length - visible().length }})
                     </button>
