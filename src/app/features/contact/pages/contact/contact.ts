@@ -23,16 +23,16 @@ import { MatInputModule } from '@angular/material/input';
   imports: [ReactiveFormsModule, RouterLink, MatFormFieldModule, MatInputModule],
 
   template: `
-    <main class="min-h-screen bg-gray-50">
+    <main class="min-h-screen bg-gray-50 pt-16">
       <!-- =====================================================
            Zebron Contact Header
            ===================================================== -->
       <section
-        class="bg-[#032D42]
-         px-4 py-6
+        class="bg-[#004242]/90
+         px-4 py-1
          text-white
          sm:px-6
-         sm:py-7
+         sm:py-2
          lg:px-8"
       >
         <div class="mx-auto max-w-5xl">
@@ -57,16 +57,7 @@ import { MatInputModule } from '@angular/material/input';
                 Get in touch
               </p>
 
-              <h1
-                class="mt-1.5
-                 text-2xl
-                 font-bold
-                 tracking-tight
-                 text-white
-                 sm:text-3xl"
-              >
-                We'd love to hear from you
-              </h1>
+              
             </div>
 
             <!-- Resource Directory -->
@@ -87,8 +78,8 @@ import { MatInputModule } from '@angular/material/input';
           <!-- Description -->
 
           <p
-            class="mt-3
-             max-w-2xl
+            class="mt-1
+             max-w-3xl
              text-sm
              leading-5
              text-blue-100
@@ -102,7 +93,7 @@ import { MatInputModule } from '@angular/material/input';
           <!-- Accent -->
 
           <div
-            class="mt-4
+            class="mt-2
              h-1
              w-12
              rounded-full
@@ -118,7 +109,7 @@ import { MatInputModule } from '@angular/material/input';
         class="mx-auto max-w-5xl
                px-4 py-8
                sm:px-6
-               sm:py-10
+               sm:py-5
                lg:px-8"
       >
         <div
@@ -261,8 +252,8 @@ import { MatInputModule } from '@angular/material/input';
             <div
               class="border-b
                      border-gray-200
-                     bg-[#032D42]
-                     px-6 py-5
+                     bg-[#007979]
+                     px-6 py-3
                      text-white
                      sm:px-8"
             >
@@ -285,7 +276,7 @@ import { MatInputModule } from '@angular/material/input';
               </h2>
 
               <p
-                class="mt-1
+                class="
                        text-sm
                        text-white/70"
               >
@@ -295,7 +286,7 @@ import { MatInputModule } from '@angular/material/input';
               </p>
             </div>
 
-            <form [formGroup]="form" (ngSubmit)="submit()" class="p-6 sm:p-8">
+            <form [formGroup]="form" (ngSubmit)="submit()" class="px-6 py-2 sm:px-8 sm:py-3">
               <div class="space-y-1">
                 <!-- =================================================
                      Name
@@ -406,7 +397,7 @@ import { MatInputModule } from '@angular/material/input';
                          border
                          border-[#032D42]/10
                          bg-[#032D42]/5
-                         p-4"
+                         px-4 py-2"
                 >
                   <p
                     class="text-sm
@@ -433,7 +424,7 @@ import { MatInputModule } from '@angular/material/input';
                     class="rounded-xl
                            border
                            border-gray-300
-                           px-6 py-3
+                           px-6 py-2
                            text-center
                            text-sm
                            font-semibold
@@ -449,7 +440,7 @@ import { MatInputModule } from '@angular/material/input';
                     [disabled]="submitting() || form.invalid"
                     class="rounded-xl
                            bg-[#007979]
-                           px-7 py-3
+                           px-4 py-2
                            text-sm
                            font-bold
                            text-white

@@ -196,7 +196,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
                 font-semibold
                 tracking-tight
                 text-white
-                text-3xl
+                text-2xl
                 pl-3
               "
               [attr.title]="currentTitle()"

@@ -127,7 +127,7 @@ import { PROFILE_PHOTO_TYPES, ProfilePhotoService } from '../../profile-photo.se
                 <h1
                   class="mt-1 truncate text-2xl font-bold
                tracking-tight text-white
-               sm:text-2xl"
+               sm:text-xl"
                 >
                   {{ user.firstName }} {{ user.lastName }}
                 </h1>
@@ -240,7 +240,7 @@ Mobile: Save icon only
       </header>
 
     <!-- Phones: content runs wall to wall; from tablets up it sits in rounded cards. -->
-    <main class="mx-auto max-w-7xl sm:px-6 sm:py-6 lg:px-8">
+    <main class="mx-auto max-w-7xl sm:px-6 sm:py-2 lg:px-8">
 
       <!-- =========================================================
            Loading state
@@ -279,6 +279,7 @@ Mobile: Save icon only
                 [attr.aria-selected]="activeTab() === 'personal'"
                 [class.border-[#007979]]="activeTab() === 'personal'"
                 [class.text-[#032D42]]="activeTab() === 'personal'"
+                [class.bg-[#E6F0F4]]="activeTab() === 'personal'"
                 [class.border-transparent]="activeTab() !== 'personal'"
                 [class.text-gray-500]="activeTab() !== 'personal'"
                 class="whitespace-nowrap border-b-2 px-4 py-4 text-sm font-semibold transition hover:text-[#032D42] focus:outline-none focus:ring-2 focus:ring-[#007979]/20 sm:px-5"
@@ -293,6 +294,7 @@ Mobile: Save icon only
                   [attr.aria-selected]="activeTab() === 'learning'"
                   [class.border-[#007979]]="activeTab() === 'learning'"
                   [class.text-[#032D42]]="activeTab() === 'learning'"
+                  [class.bg-[#E6F0F4]]="activeTab() === 'learning'"
                   [class.border-transparent]="activeTab() !== 'learning'"
                   [class.text-gray-500]="activeTab() !== 'learning'"
                   class="whitespace-nowrap border-b-2 px-4 py-4 text-sm font-semibold transition hover:text-[#032D42] focus:outline-none focus:ring-2 focus:ring-[#007979]/20 sm:px-5"
@@ -311,7 +313,7 @@ Mobile: Save icon only
                   (click)="setActiveTab('followers')"
                   [attr.aria-selected]="activeTab() === 'followers'"
                   [class.border-[#007979]]="activeTab() === 'followers'"
-                  [class.text-[#032D42]]="activeTab() === 'followers'"
+                  [class.bg-[#E6F0F4]]="activeTab() === 'followers'"
                   [class.border-transparent]="activeTab() !== 'followers'"
                   [class.text-gray-500]="activeTab() !== 'followers'"
                   class="whitespace-nowrap border-b-2 px-4 py-4 text-sm font-semibold transition hover:text-[#032D42] focus:outline-none focus:ring-2 focus:ring-[#007979]/20 sm:px-5"
@@ -334,6 +336,7 @@ Mobile: Save icon only
                   [attr.aria-selected]="activeTab() === 'following'"
                   [class.border-[#007979]]="activeTab() === 'following'"
                   [class.text-[#032D42]]="activeTab() === 'following'"
+                  [class.bg-[#E6F0F4]]="activeTab() === 'following'"
                   [class.border-transparent]="activeTab() !== 'following'"
                   [class.text-gray-500]="activeTab() !== 'following'"
                   class="whitespace-nowrap border-b-2 px-4 py-4 text-sm font-semibold transition hover:text-[#032D42] focus:outline-none focus:ring-2 focus:ring-[#007979]/20 sm:px-5"
@@ -352,6 +355,7 @@ Mobile: Save icon only
                   [attr.aria-selected]="activeTab() === 'organizations'"
                   [class.border-[#007979]]="activeTab() === 'organizations'"
                   [class.text-[#032D42]]="activeTab() === 'organizations'"
+                  [class.bg-[#E6F0F4]]="activeTab() === 'organizations'"
                   [class.border-transparent]="activeTab() !== 'organizations'"
                   [class.text-gray-500]="activeTab() !== 'organizations'"
                   class="whitespace-nowrap border-b-2 px-4 py-4 text-sm font-semibold transition hover:text-[#032D42] focus:outline-none focus:ring-2 focus:ring-[#007979]/20 sm:px-5"
@@ -367,6 +371,7 @@ Mobile: Save icon only
                 [attr.aria-selected]="activeTab() === 'settings'"
                 [class.border-[#007979]]="activeTab() === 'settings'"
                 [class.text-[#032D42]]="activeTab() === 'settings'"
+                [class.bg-[#E6F0F4]]="activeTab() === 'settings'"
                 [class.border-transparent]="activeTab() !== 'settings'"
                 [class.text-gray-500]="activeTab() !== 'settings'"
                 class="whitespace-nowrap border-b-2 px-4 py-4 text-sm font-semibold transition hover:text-[#032D42] focus:outline-none focus:ring-2 focus:ring-[#007979]/20 sm:px-5"

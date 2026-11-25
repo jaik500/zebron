@@ -18,7 +18,10 @@ html {
       primary: mat.$azure-palette,
       tertiary: mat.$blue-palette,
     ),
-    typography: Roboto,
+    typography: (
+      plain-family: 'Inter, sans-serif',
+      brand-family: 'Inter, sans-serif',
+    ),
     density: 0,
   ));
 }

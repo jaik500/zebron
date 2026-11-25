@@ -72,7 +72,7 @@ const DAYS: { key: keyof Availability; label: string }[] = [
   standalone: true,
   imports: [DatePipe, FormsModule, RouterLink, MatIconModule, BootcampFieldsComponent],
   template: `
-    <main class="mt-16 min-h-screen overflow-x-clip bg-gray-50">
+   <main class="mt-16 min-h-screen overflow-x-clip bg-gray-50">
       <!-- ===================== Action bar (the universal header shows "Resources" or "Bootcamps") ===================== -->
       <div class="sticky top-16 z-40 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white shadow-sm">
         <div class="mx-auto flex max-w-6xl items-center gap-2 px-4 py-2 sm:px-6 lg:px-8">
@@ -313,16 +313,26 @@ const DAYS: { key: keyof Availability; label: string }[] = [
             <!-- ===================== Main column ===================== -->
             <div class="min-w-0 space-y-5 lg:col-start-1 lg:row-span-2 lg:row-start-1">
               <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6" aria-labelledby="about-title">
-                <h2 id="about-title" class="text-base font-bold text-[#032D42]">About</h2>
-                <p class="mt-2 whitespace-pre-line text-[15px] leading-7 text-gray-700 [overflow-wrap:anywhere]">{{ item.description }}</p>
-                @if (item.tags.length) {
-                  <ul class="mt-4 flex flex-wrap gap-1.5" aria-label="Tags">
-                    @for (tag of item.tags; track tag) {
-                      <li class="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">#{{ tag }}</li>
-                    }
-                  </ul>
-                }
-              </section>
+
+  <h2 id="about-title" class="text-lg font-bold text-[#032D42]">
+    About
+  </h2>
+
+  <p class="mt-2 whitespace-pre-line text-base leading-7 text-gray-700 [overflow-wrap:anywhere]">
+    {{ item.description }}
+  </p>
+
+  @if (item.tags.length) {
+    <ul class="mt-4 flex flex-wrap gap-1.5" aria-label="Tags">
+      @for (tag of item.tags; track tag) {
+        <li class="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700">
+          #{{ tag }}
+        </li>
+      }
+    </ul>
+  }
+
+</section>
 
               <!-- Before you go: eligibility, documents, how to apply, languages, area -->
               @if (item.eligibility || item.documentsNeeded || item.howToApply || item.languages?.length || item.serviceArea) {
