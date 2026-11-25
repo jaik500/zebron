@@ -60,11 +60,11 @@ interface Result {
   standalone: true,
   imports: [RouterLink, MatIconModule],
   template: `
-    <main class="mt-16 min-h-screen overflow-x-clip bg-gray-50">
+       <main class="mt-16 min-h-screen overflow-x-clip bg-gray-50">
       <div class="sticky top-16 z-40 shadow-sm">
         <!-- Search band (the universal header shows "Bootcamps") -->
         <header class="bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white">
-          <div class="mx-auto max-w-6xl px-4 py-2 sm:px-6 lg:px-8">
+          <div class="mx-auto max-w-6xl px-2 py-2 sm:px-6 lg:px-8">
             <form class="flex items-center overflow-hidden rounded-xl bg-white text-gray-900 shadow-sm" role="search" (submit)="$event.preventDefault()">
               <label class="flex min-w-0 flex-1 items-center gap-2 px-3 focus-within:bg-[#007979]/5">
                 <mat-icon class="shrink-0 text-gray-400" aria-hidden="true">search</mat-icon>
@@ -74,14 +74,14 @@ interface Result {
                   [value]="filters().q"
                   (input)="set('q', $any($event.target).value)"
                   placeholder="Skill, certification or bootcamp"
-                  class="h-9 w-full min-w-0 appearance-none border-0 bg-transparent p-0 text-sm shadow-none !outline-none placeholder:text-gray-500 focus:ring-0"
+                  class="h-11 w-full min-w-0 appearance-none border-0 bg-transparent p-0 text-base shadow-none !outline-none placeholder:text-gray-500 focus:ring-0"
                 />
               </label>
               <span class="h-6 w-px bg-gray-200" aria-hidden="true"></span>
-              <label class="flex shrink-0 items-center gap-1 px-2 text-sm text-gray-600">
+              <label class="flex min-h-11 shrink-0 items-center gap-1 px-2 text-sm text-gray-600">
                 <mat-icon class="!h-5 !w-5 !text-[20px] text-gray-400" aria-hidden="true">sort</mat-icon>
                 <span class="sr-only">Sort by</span>
-                <select (change)="set('sort', $any($event.target).value)" class="h-9 cursor-pointer appearance-none border-0 bg-transparent p-0 pr-1 text-sm !outline-none focus:ring-0">
+                <select (change)="set('sort', $any($event.target).value)" class="h-11 cursor-pointer appearance-none border-0 bg-transparent p-0 pr-1 text-base !outline-none focus:ring-0">
                   @for (option of sorts; track option.value) {
                     <option [value]="option.value" [selected]="filters().sort === option.value">{{ option.label }}</option>
                   }
@@ -93,7 +93,7 @@ interface Result {
 
         <!-- Program filters -->
         <div class="border-b border-gray-200 bg-white">
-          <div class="mx-auto flex max-w-6xl items-center gap-2 overflow-x-auto px-4 py-1.5 sm:flex-wrap sm:px-6 lg:px-8 [scrollbar-width:none]">
+          <div class="mx-auto flex max-w-6xl items-center gap-2 overflow-x-auto px-2 py-2 sm:flex-wrap sm:px-6 lg:px-8 [scrollbar-width:none]">
             <label class="sr-only" for="bc-cost">Cost</label>
             <select id="bc-cost" (change)="set('cost', $any($event.target).value)" [class]="selectPill(filters().cost)">
               <option value="" [selected]="!filters().cost">Any cost</option>
@@ -128,9 +128,9 @@ interface Result {
         </div>
       </div>
 
-      <div class="mx-auto max-w-6xl px-4 py-5 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-6xl px-2 py-4 sm:px-6 sm:py-5 lg:px-8">
         <!-- Intro -->
-        <section class="overflow-hidden rounded-2xl bg-gradient-to-br from-[#032D42] to-[#035e5e] p-5 text-white shadow-sm sm:p-6">
+        <section class="overflow-hidden rounded-2xl bg-gradient-to-br from-[#032D42] to-[#035e5e] p-4 text-white shadow-sm sm:p-6">
           <h1 class="text-2xl font-bold tracking-tight sm:text-3xl">Find a tech bootcamp</h1>
           <p class="mt-1 max-w-2xl text-sm text-white/80 sm:text-base">
             Short, hands-on programs that lead to tech jobs. Compare what they teach, what they cost and when the next class starts.
@@ -193,9 +193,9 @@ interface Result {
                   {{ bootcamps().length ? 'Try fewer filters.' : 'Meanwhile, start learning with our free courses.' }}
                 </p>
                 @if (anyFilter()) {
-                  <button type="button" (click)="clear()" class="mt-4 inline-flex h-9 items-center rounded-lg bg-[#007979] px-3 text-sm font-semibold text-white hover:bg-[#006666]">Clear filters</button>
+                  <button type="button" (click)="clear()" class="mt-4 inline-flex min-h-11 items-center rounded-lg bg-[#007979] px-3 text-sm font-semibold text-white hover:bg-[#006666]">Clear filters</button>
                 } @else {
-                  <a routerLink="/courses" class="mt-4 inline-flex h-9 items-center rounded-lg bg-[#007979] px-3 text-sm font-semibold text-white hover:bg-[#006666]">Free courses</a>
+                  <a routerLink="/courses" class="mt-4 inline-flex min-h-11 items-center rounded-lg bg-[#007979] px-3 text-sm font-semibold text-white hover:bg-[#006666]">Free courses</a>
                 }
               </div>
             } @else {
@@ -204,7 +204,7 @@ interface Result {
                   @let bootcamp = result.entry.resource;
                   <li>
                     <article class="overflow-hidden rounded-2xl border bg-white shadow-sm transition hover:shadow-md {{ result.recommended ? 'border-[#007979]/40' : 'border-gray-200' }}">
-                      <div class="p-4 sm:p-5">
+                      <div class="p-3 sm:p-5">
                         <div class="flex items-start gap-3">
                           <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700">
                             <mat-icon aria-hidden="true">rocket_launch</mat-icon>
@@ -260,18 +260,18 @@ interface Result {
                               <li>
                                 <a [routerLink]="['/resources', bootcamp.slug]" fragment="programs" class="flex flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2.5 hover:bg-gray-50">
                                   <span class="min-w-0 flex-1 basis-56">
-                                    <span class="block text-[11px] font-semibold uppercase tracking-wide text-[#007979]">{{ field(program) }}</span>
+                                    <span class="block text-xs font-semibold uppercase tracking-wide text-[#007979]">{{ field(program) }}</span>
                                     <span class="block text-sm font-semibold text-[#032D42]">
                                       {{ program.title }}
                                       @if (program.recommended) {
                                         <mat-icon class="!h-4 !w-4 align-[-3px] !text-base text-[#007979]" aria-label="Recommended by Zebron">verified</mat-icon>
                                       }
                                     </span>
-                                    <span class="block text-xs text-gray-500">{{ facts(program) }}</span>
+                                    <span class="block text-sm leading-5 text-gray-600">{{ facts(program) }}</span>
                                   </span>
                                   <span class="text-right text-sm">
                                     <span class="block font-semibold {{ cost(program) === 'Free' ? 'text-green-700' : 'text-[#032D42]' }}">{{ cost(program) }}</span>
-                                    <span class="block text-xs text-gray-500">{{ next(program) }}</span>
+                                    <span class="block text-sm leading-5 text-gray-600">{{ next(program) }}</span>
                                   </span>
                                 </a>
                               </li>
@@ -283,12 +283,12 @@ interface Result {
                         }
 
                         <div class="mt-4 flex flex-wrap items-center gap-2">
-                          <a [routerLink]="['/resources', bootcamp.slug]" class="inline-flex h-9 items-center gap-1 rounded-lg bg-[#007979] px-3 text-sm font-semibold text-white hover:bg-[#006666]">
+                          <a [routerLink]="['/resources', bootcamp.slug]" class="inline-flex min-h-11 items-center gap-1 rounded-lg bg-[#007979] px-3 text-sm font-semibold text-white hover:bg-[#006666]">
                             View bootcamp
                             <mat-icon class="!h-4 !w-4 !text-base" aria-hidden="true">arrow_forward</mat-icon>
                           </a>
                           @if (result.nextStart) {
-                            <span class="inline-flex items-center gap-1 text-xs text-gray-600">
+                            <span class="inline-flex min-h-10 items-center gap-1 text-sm text-gray-600">
                               <mat-icon class="!h-4 !w-4 !text-base text-gray-400" aria-hidden="true">event</mat-icon>
                               Next class {{ day(result.nextStart) }}
                             </span>
@@ -301,7 +301,7 @@ interface Result {
               </ul>
               @if (results().length > visible().length) {
                 <div class="mt-5 text-center">
-                  <button type="button" (click)="limit.set(limit() + pageSize)" class="inline-flex h-10 items-center rounded-lg border border-gray-300 bg-white px-4 text-sm font-semibold text-[#032D42] hover:border-[#007979] hover:text-[#007979]">
+                  <button type="button" (click)="limit.set(limit() + pageSize)" class="inline-flex min-h-11 items-center rounded-lg border border-gray-300 bg-white px-4 text-sm font-semibold text-[#032D42] hover:border-[#007979] hover:text-[#007979]">
                     Show more ({{ results().length - visible().length }})
                   </button>
                 </div>

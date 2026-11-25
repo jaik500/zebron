@@ -72,7 +72,7 @@ const DAYS: { key: keyof Availability; label: string }[] = [
   standalone: true,
   imports: [DatePipe, FormsModule, RouterLink, MatIconModule, BootcampFieldsComponent],
   template: `
-   <main class="mt-16 min-h-screen overflow-x-clip bg-gray-50">
+    <main class="mt-16 min-h-screen overflow-x-clip bg-gray-50">
       <!-- ===================== Action bar (the universal header shows "Resources" or "Bootcamps") ===================== -->
       <div class="sticky top-16 z-40 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white shadow-sm">
         <div class="mx-auto flex max-w-6xl items-center gap-2 px-4 py-2 sm:px-6 lg:px-8">
@@ -116,7 +116,7 @@ const DAYS: { key: keyof Availability; label: string }[] = [
         </div>
       </div>
 
-      <div class="mx-auto max-w-6xl px-2 py-5 sm:px-6 sm:py-8 lg:px-8">
+      <div class="mx-auto max-w-6xl px-1 py-5 sm:px-6 sm:py-8 lg:px-8">
         @if (loading()) {
           <section class="rounded-2xl border border-gray-200 bg-white px-6 py-16 text-center shadow-sm">
             <div class="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-gray-200 border-t-[#007979]"></div>
@@ -139,34 +139,36 @@ const DAYS: { key: keyof Availability; label: string }[] = [
           <!-- ===================== Header card ===================== -->
           <header class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
             <div class="h-1.5 bg-gradient-to-r from-[#007979] via-[#12BFC3] to-[#2a835f]"></div>
-            <div class="flex flex-col gap-4 p-5 sm:flex-row sm:items-start sm:p-6">
-              <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl {{ kind().tint }}">
-                <mat-icon class="!h-7 !w-7 !text-[28px]" aria-hidden="true">{{ kind().icon }}</mat-icon>
-              </span>
+            <div class="flex flex-col gap-3 p-2 sm:p-6">
+              <div class="flex items-start justify-between gap-3">
+                <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl {{ kind().tint }}">
+                  <mat-icon class="!h-7 !w-7 !text-[28px]" aria-hidden="true">{{ kind().icon }}</mat-icon>
+                </span>
 
-              <div class="min-w-0 flex-1">
-                <div class="flex flex-wrap items-center gap-2">
+                <div class="flex min-w-0 flex-wrap items-center justify-end gap-2 text-right">
                   @if (category(); as itemCategory) {
                     <a
                       [routerLink]="listLink()"
                       [queryParams]="listQuery()"
-                      class="rounded-full bg-[#E8F4F4] px-2.5 py-0.5 text-xs font-semibold text-[#007979] hover:bg-[#d5ecec]"
+                      class="rounded-full bg-[#E8F4F4] px-2.5 py-1 text-xs font-semibold text-[#007979] hover:bg-[#d5ecec]"
                     >
                       {{ itemCategory.name }}
                     </a>
                   }
                   @if (item.featured) {
-                    <span class="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">Featured</span>
+                    <span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">Featured</span>
                   }
                   @if (hasRecommended()) {
-                    <span class="inline-flex items-center gap-1 rounded-full bg-[#007979] px-2.5 py-0.5 text-xs font-semibold text-white">
+                    <span class="inline-flex items-center gap-1 rounded-full bg-[#007979] px-2.5 py-1 text-xs font-semibold text-white">
                       <mat-icon class="!h-3.5 !w-3.5 !text-[14px]" aria-hidden="true">verified</mat-icon>
                       Recommended by Zebron
                     </span>
                   }
                 </div>
+              </div>
 
-                <h1 class="mt-2 text-2xl font-bold tracking-tight text-[#032D42] [overflow-wrap:anywhere] sm:text-3xl">{{ item.name }}</h1>
+              <div class="min-w-0 flex-1">
+                <h1 class="text-2xl font-bold tracking-tight text-[#032D42] [overflow-wrap:anywhere] sm:text-3xl">{{ item.name }}</h1>
 
                 <p class="mt-1 flex flex-wrap items-center gap-x-1.5 text-sm">
                   @if (item.verified) {
@@ -385,7 +387,7 @@ const DAYS: { key: keyof Availability; label: string }[] = [
                   <h2 id="programs-title" class="px-1 text-lg font-bold text-[#032D42]">Programs</h2>
                   @for (program of programs(); track program.id) {
                     <article class="overflow-hidden rounded-2xl border bg-white shadow-sm {{ program.recommended ? 'border-[#007979]/40' : 'border-gray-200' }}">
-                      <div class="p-3 sm:p-6">
+                      <div class="p-2 sm:p-6">
                         <div class="flex flex-wrap items-start gap-2">
                           <div class="min-w-0 flex-1">
                             <p class="text-xs font-semibold uppercase tracking-wide text-[#007979]">{{ fieldName(program) }}</p>
@@ -590,7 +592,7 @@ const DAYS: { key: keyof Availability; label: string }[] = [
 
               <!-- Checklist for this kind of help -->
               @if (kind().tips.length) {
-                <section class="rounded-2xl border border-amber-200 bg-amber-50/60 p-3 sm:p-6" aria-labelledby="tips-title">
+                <section class="rounded-2xl border border-amber-200 bg-amber-50/60 p-5 sm:p-6" aria-labelledby="tips-title">
                   <h2 id="tips-title" class="flex items-center gap-2 text-base font-bold text-[#032D42]">
                     <mat-icon class="!h-5 !w-5 !text-[20px] text-amber-600" aria-hidden="true">lightbulb</mat-icon>
                     Before you reach out
