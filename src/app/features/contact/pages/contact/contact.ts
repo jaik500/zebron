@@ -56,8 +56,6 @@ import { MatInputModule } from '@angular/material/input';
               >
                 Get in touch
               </p>
-
-              
             </div>
 
             <!-- Resource Directory -->
@@ -292,16 +290,16 @@ import { MatInputModule } from '@angular/material/input';
                      Name
                      ================================================= -->
                 <div>
-
                   <mat-form-field appearance="outline" class="zb-field">
                     <mat-label>Your name</mat-label>
-                    <input matInput
-                    id="name"
-                    type="text"
-                    formControlName="name"
-                    autocomplete="name"
-                    placeholder="Your name"
-                  />
+                    <input
+                      matInput
+                      id="name"
+                      type="text"
+                      formControlName="name"
+                      autocomplete="name"
+                      placeholder="Your name"
+                    />
                     @if (invalid('name')) {
                       <mat-error>Please enter your name.</mat-error>
                     }
@@ -312,16 +310,16 @@ import { MatInputModule } from '@angular/material/input';
                      Email
                      ================================================= -->
                 <div>
-
                   <mat-form-field appearance="outline" class="zb-field">
                     <mat-label>Email address</mat-label>
-                    <input matInput
-                    id="email"
-                    type="email"
-                    formControlName="email"
-                    autocomplete="email"
-                    placeholder="you@example.com"
-                  />
+                    <input
+                      matInput
+                      id="email"
+                      type="email"
+                      formControlName="email"
+                      autocomplete="email"
+                      placeholder="you@example.com"
+                    />
                     @if (invalid('email')) {
                       <mat-error>Please enter a valid email address.</mat-error>
                     }
@@ -332,15 +330,15 @@ import { MatInputModule } from '@angular/material/input';
                      Subject
                      ================================================= -->
                 <div>
-
                   <mat-form-field appearance="outline" class="zb-field">
                     <mat-label>Subject</mat-label>
-                    <input matInput
-                    id="subject"
-                    type="text"
-                    formControlName="subject"
-                    placeholder="How can we help?"
-                  />
+                    <input
+                      matInput
+                      id="subject"
+                      type="text"
+                      formControlName="subject"
+                      placeholder="How can we help?"
+                    />
                     @if (invalid('subject')) {
                       <mat-error>Please enter a subject.</mat-error>
                     }
@@ -353,13 +351,14 @@ import { MatInputModule } from '@angular/material/input';
                 <div>
                   <mat-form-field appearance="outline" class="zb-field">
                     <mat-label>Message</mat-label>
-                    <textarea matInput
-                    id="message"
-                    formControlName="message"
-                    rows="8"
-                    maxlength="5000"
-                    placeholder="Tell us how we can help..."
-                  ></textarea>
+                    <textarea
+                      matInput
+                      id="message"
+                      formControlName="message"
+                      rows="8"
+                      maxlength="5000"
+                      placeholder="Tell us how we can help..."
+                    ></textarea>
                     @if (invalid('message')) {
                       <mat-error>Please enter a message.</mat-error>
                     }
