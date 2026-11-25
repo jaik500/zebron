@@ -116,7 +116,7 @@ const DAYS: { key: keyof Availability; label: string }[] = [
         </div>
       </div>
 
-      <div class="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+      <div class="mx-auto max-w-6xl px-2 py-5 sm:px-6 sm:py-8 lg:px-8">
         @if (loading()) {
           <section class="rounded-2xl border border-gray-200 bg-white px-6 py-16 text-center shadow-sm">
             <div class="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-gray-200 border-t-[#007979]"></div>
@@ -385,7 +385,7 @@ const DAYS: { key: keyof Availability; label: string }[] = [
                   <h2 id="programs-title" class="px-1 text-lg font-bold text-[#032D42]">Programs</h2>
                   @for (program of programs(); track program.id) {
                     <article class="overflow-hidden rounded-2xl border bg-white shadow-sm {{ program.recommended ? 'border-[#007979]/40' : 'border-gray-200' }}">
-                      <div class="p-5 sm:p-6">
+                      <div class="p-3 sm:p-6">
                         <div class="flex flex-wrap items-start gap-2">
                           <div class="min-w-0 flex-1">
                             <p class="text-xs font-semibold uppercase tracking-wide text-[#007979]">{{ fieldName(program) }}</p>
@@ -590,7 +590,7 @@ const DAYS: { key: keyof Availability; label: string }[] = [
 
               <!-- Checklist for this kind of help -->
               @if (kind().tips.length) {
-                <section class="rounded-2xl border border-amber-200 bg-amber-50/60 p-5 sm:p-6" aria-labelledby="tips-title">
+                <section class="rounded-2xl border border-amber-200 bg-amber-50/60 p-3 sm:p-6" aria-labelledby="tips-title">
                   <h2 id="tips-title" class="flex items-center gap-2 text-base font-bold text-[#032D42]">
                     <mat-icon class="!h-5 !w-5 !text-[20px] text-amber-600" aria-hidden="true">lightbulb</mat-icon>
                     Before you reach out
