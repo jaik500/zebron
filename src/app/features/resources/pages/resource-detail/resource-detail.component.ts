@@ -231,7 +231,7 @@ const DAYS: { key: keyof Availability; label: string }[] = [
           <div class="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px] lg:grid-rows-[auto_1fr]">
             <!-- ===================== How to get this help ===================== -->
             <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm lg:col-start-2 lg:row-start-1" aria-labelledby="actions-title">
-              <h2 id="actions-title" class="text-base font-bold text-[#032D42]">{{ kind().actionsTitle }}</h2>
+              <h2 id="actions-title" class="text-lg font-bold text-[#032D42]">{{ kind().actionsTitle }}</h2>
               @if (actions().length) {
                 <ul class="mt-3 space-y-2">
                   @for (action of actions(); track action.type + (action.programId ?? ''); let first = $first) {
@@ -250,7 +250,7 @@ const DAYS: { key: keyof Availability; label: string }[] = [
                         </span>
                         <span class="min-w-0 flex-1">
                           <span class="block text-sm font-semibold">{{ action.label }}</span>
-                          <span class="block truncate text-xs {{ first ? 'text-white/80' : 'text-gray-500' }}">{{ action.detail }}</span>
+                          <span class="block whitespace-normal text-sm leading-5 {{ first ? 'text-white/85' : 'text-gray-600' }}">{{ action.detail }}</span>
                         </span>
                         @if (action.external) {
                           <mat-icon class="!h-4 !w-4 !text-base opacity-70" aria-hidden="true">open_in_new</mat-icon>
@@ -273,7 +273,7 @@ const DAYS: { key: keyof Availability; label: string }[] = [
                 @if (reportState() === 'open' || reportState() === 'sending') {
                   <form class="mt-3 space-y-2.5" (ngSubmit)="sendReport(item.id)" aria-label="Report a problem with this listing">
                     <label class="block">
-                      <span class="block text-xs font-semibold text-gray-700">What is wrong?</span>
+                      <span class="block text-sm font-semibold text-gray-700">What is wrong?</span>
                       <select name="reportReason" [(ngModel)]="reportReason" required
                         class="mt-1 w-full rounded-lg border border-gray-300 bg-white px-2.5 py-2 text-sm text-gray-800 focus:border-[#007979] focus:outline-none">
                         @for (reason of reportReasons; track reason.value) {
@@ -282,22 +282,22 @@ const DAYS: { key: keyof Availability; label: string }[] = [
                       </select>
                     </label>
                     <label class="block">
-                      <span class="block text-xs font-semibold text-gray-700">Details <span class="font-normal text-gray-500">(optional)</span></span>
+                      <span class="block text-sm font-semibold text-gray-700">Details <span class="font-normal text-gray-500">(optional)</span></span>
                       <textarea name="reportDetails" [(ngModel)]="reportDetails" rows="3" [maxlength]="reportMax"
                         placeholder="For example: the new number is 301-555-0100"
                         class="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-2 text-sm text-gray-800 focus:border-[#007979] focus:outline-none"></textarea>
                     </label>
                     <label class="block">
-                      <span class="block text-xs font-semibold text-gray-700">Your email <span class="font-normal text-gray-500">(optional, if we may ask you about it)</span></span>
+                      <span class="block text-sm font-semibold text-gray-700">Your email <span class="font-normal text-gray-500">(optional, if we may ask you about it)</span></span>
                       <input name="reportEmail" type="email" [(ngModel)]="reportEmail" maxlength="200" autocomplete="email"
                         class="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-2 text-sm text-gray-800 focus:border-[#007979] focus:outline-none" />
                     </label>
                     <div class="flex gap-2">
                       <button type="submit" [disabled]="reportState() === 'sending'"
-                        class="inline-flex h-9 items-center rounded-lg bg-[#007979] px-3 text-sm font-semibold text-white hover:bg-[#006666] disabled:opacity-60">
+                        class="inline-flex min-h-11 items-center rounded-lg bg-[#007979] px-3 text-sm font-semibold text-white hover:bg-[#006666] disabled:opacity-60">
                         {{ reportState() === 'sending' ? 'Sending…' : 'Send report' }}
                       </button>
-                      <button type="button" (click)="reportState.set('idle')" class="inline-flex h-9 items-center rounded-lg px-3 text-sm font-medium text-gray-600 hover:bg-gray-100">Cancel</button>
+                      <button type="button" (click)="reportState.set('idle')" class="inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-gray-600 hover:bg-gray-100">Cancel</button>
                     </div>
                   </form>
                 }
@@ -337,7 +337,7 @@ const DAYS: { key: keyof Availability; label: string }[] = [
               <!-- Before you go: eligibility, documents, how to apply, languages, area -->
               @if (item.eligibility || item.documentsNeeded || item.howToApply || item.languages?.length || item.serviceArea) {
                 <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6" aria-labelledby="before-title">
-                  <h2 id="before-title" class="text-base font-bold text-[#032D42]">Before you go</h2>
+                  <h2 id="before-title" class="text-lg font-bold text-[#032D42]">Before you go</h2>
                   <dl class="mt-3 space-y-4 text-sm leading-6 text-gray-700">
                     @if (item.eligibility) {
                       <div>
@@ -382,7 +382,7 @@ const DAYS: { key: keyof Availability; label: string }[] = [
               <!-- Programs (bootcamps and any resource with programs) -->
               @if (programs().length) {
                 <section id="programs" class="scroll-mt-32 space-y-3" aria-labelledby="programs-title">
-                  <h2 id="programs-title" class="px-1 text-base font-bold text-[#032D42]">Programs</h2>
+                  <h2 id="programs-title" class="px-1 text-lg font-bold text-[#032D42]">Programs</h2>
                   @for (program of programs(); track program.id) {
                     <article class="overflow-hidden rounded-2xl border bg-white shadow-sm {{ program.recommended ? 'border-[#007979]/40' : 'border-gray-200' }}">
                       <div class="p-5 sm:p-6">
@@ -401,19 +401,19 @@ const DAYS: { key: keyof Availability; label: string }[] = [
 
                         <dl class="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
                           <div class="rounded-xl bg-gray-50 px-3 py-2">
-                            <dt class="text-xs text-gray-500">Cost</dt>
+                            <dt class="text-sm text-gray-600">Cost</dt>
                             <dd class="font-semibold {{ cost(program) === 'Free' ? 'text-green-700' : 'text-[#032D42]' }}">{{ cost(program) }}</dd>
                           </div>
                           <div class="rounded-xl bg-gray-50 px-3 py-2">
-                            <dt class="text-xs text-gray-500">Format</dt>
+                            <dt class="text-sm text-gray-600">Format</dt>
                             <dd class="font-semibold text-[#032D42]">{{ format(program) }}</dd>
                           </div>
                           <div class="rounded-xl bg-gray-50 px-3 py-2">
-                            <dt class="text-xs text-gray-500">Schedule</dt>
+                            <dt class="text-sm text-gray-600">Schedule</dt>
                             <dd class="font-semibold text-[#032D42]">{{ schedule(program) }}</dd>
                           </div>
                           <div class="rounded-xl bg-gray-50 px-3 py-2">
-                            <dt class="text-xs text-gray-500">Length</dt>
+                            <dt class="text-sm text-gray-600">Length</dt>
                             <dd class="font-semibold text-[#032D42]">{{ length(program) || 'Ask them' }}</dd>
                           </div>
                         </dl>
@@ -431,7 +431,7 @@ const DAYS: { key: keyof Availability; label: string }[] = [
 
                         @if (program.skills.length) {
                           <div class="mt-4">
-                            <h4 class="text-xs font-semibold text-gray-500">You'll learn</h4>
+                            <h4 class="text-sm font-semibold text-gray-600">You'll learn</h4>
                             <ul class="mt-1.5 flex flex-wrap gap-1.5">
                               @for (skill of program.skills; track skill) {
                                 <li class="rounded-full bg-[#E8F4F4] px-2.5 py-0.5 text-xs font-medium text-[#035e5e]">{{ skill }}</li>
@@ -483,7 +483,7 @@ const DAYS: { key: keyof Availability; label: string }[] = [
                         <!-- Start dates -->
                         @if (starts(program).length) {
                           <div class="mt-4">
-                            <h4 class="text-xs font-semibold text-gray-500">Next start dates</h4>
+                            <h4 class="text-sm font-semibold text-gray-600">Next start dates</h4>
                             <ul class="mt-1.5 flex flex-wrap gap-2">
                               @for (start of starts(program); track start.date) {
                                 <li class="rounded-lg border border-gray-200 px-2.5 py-1 text-sm">
@@ -505,7 +505,7 @@ const DAYS: { key: keyof Availability; label: string }[] = [
                             target="_blank"
                             rel="noopener noreferrer"
                             (click)="countApply(program.id)"
-                            class="mt-5 inline-flex h-10 items-center gap-1.5 rounded-lg bg-[#007979] px-4 text-sm font-semibold text-white hover:bg-[#006666]"
+                            class="mt-5 inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-[#007979] px-4 text-sm font-semibold text-white hover:bg-[#006666]"
                           >
                             Apply to {{ program.title }}
                             <mat-icon class="!h-4 !w-4 !text-base" aria-hidden="true">open_in_new</mat-icon>
@@ -532,7 +532,7 @@ const DAYS: { key: keyof Availability; label: string }[] = [
               @if (item.availability; as availability) {
                 <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6" aria-labelledby="hours-title">
                   <div class="flex items-center gap-2">
-                    <h2 id="hours-title" class="text-base font-bold text-[#032D42]">Hours</h2>
+                    <h2 id="hours-title" class="text-lg font-bold text-[#032D42]">Hours</h2>
                     @if (openNow() !== null) {
                       <span class="rounded-full px-2 py-0.5 text-xs font-semibold {{ openNow() ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600' }}">
                         {{ openNow() ? 'Open now' : 'Closed now' }}
@@ -562,7 +562,7 @@ const DAYS: { key: keyof Availability; label: string }[] = [
               @if (location(); as place) {
                 @if (addressLines().length) {
                   <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6" aria-labelledby="location-title">
-                    <h2 id="location-title" class="text-base font-bold text-[#032D42]">Location</h2>
+                    <h2 id="location-title" class="text-lg font-bold text-[#032D42]">Location</h2>
                     <div class="mt-3 flex flex-wrap items-start gap-4">
                       <address class="flex min-w-0 flex-1 gap-2 text-sm not-italic leading-6 text-gray-700">
                         <mat-icon class="!h-5 !w-5 shrink-0 !text-[20px] text-[#007979]" aria-hidden="true">location_on</mat-icon>
@@ -626,7 +626,7 @@ const DAYS: { key: keyof Availability; label: string }[] = [
             <!-- ===================== Related ===================== -->
             @if (relatedResources().length) {
               <aside class="self-start rounded-2xl border border-gray-200 bg-white p-5 shadow-sm lg:col-start-2 lg:row-start-2" aria-labelledby="related-title">
-                <h2 id="related-title" class="text-base font-bold text-[#032D42]">More {{ category()?.name ? 'in ' + category()!.name : 'like this' }}</h2>
+                <h2 id="related-title" class="text-lg font-bold text-[#032D42]">More {{ category()?.name ? 'in ' + category()!.name : 'like this' }}</h2>
                 <ul class="mt-3 divide-y divide-gray-100">
                   @for (related of relatedResources(); track related.id) {
                     <li>
